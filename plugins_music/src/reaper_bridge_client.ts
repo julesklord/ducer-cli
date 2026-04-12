@@ -5,6 +5,7 @@
  */
 
 import path from 'node:path';
+import os from 'node:os';
 import fs from 'node:fs';
 
 import {
@@ -13,12 +14,37 @@ import {
   ActionValidationResult,
 } from './bridge_interface.js';
 
+/**
+ * Gets the cross-platform config directory for REAPER scripts.
+ * Windows: %APPDATA%\REAPER\Scripts
+ * macOS: ~/Library/Application Support/REAPER/Scripts  
+ * Linux: ~/.config/REAPER/Scripts
+ */
+function getReaperScriptsDir(): string {
+  const platform = os.platform();
+  
+  if (platform === 'win32') {
+    const appData = process.env['APPDATA'];
+    if (!appData) {
+      throw new Error('APPDATA environment variable not set. Cannot locate REAPER scripts directory on Windows.');
+    }
+    return path.join(appData, 'REAPER', 'Scripts');
+  }
+  
+  if (platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Application Support', 'REAPER', 'Scripts');
+  }
+  
+  // Linux and other Unix-like systems
+  const xdgConfig = process.env['XDG_CONFIG_HOME'];
+  if (xdgConfig) {
+    return path.join(xdgConfig, 'REAPER', 'Scripts');
+  }
+  return path.join(os.homedir(), '.config', 'REAPER', 'Scripts');
+}
+
 export class ReaperBridgeClient implements DawBridge {
-  private static readonly REAPER_SCRIPTS_DIR = path.join(
-    process.env['APPDATA'] || '',
-    'REAPER',
-    'Scripts',
-  );
+  private static readonly REAPER_SCRIPTS_DIR = getReaperScriptsDir();
   private static readonly CMD_FILE = path.join(
     ReaperBridgeClient.REAPER_SCRIPTS_DIR,
     'ducer_commands.txt',
