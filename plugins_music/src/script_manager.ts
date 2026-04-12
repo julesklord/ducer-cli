@@ -18,11 +18,17 @@ export class ScriptManager {
 
   constructor(baseDir: string = process.cwd()) {
     this.scriptsDir = path.join(baseDir, 'scripts', 'lua');
-    this.registryUrl = 'https://github.com/julesklord/ducer-community-scripts'; // Placeholder
+    // TODO: This is a placeholder URL. The registry is not yet implemented.
+    // When ready, update this to the actual community scripts repository.
+    // For now, installToolset creates local directories only.
+    this.registryUrl = 'https://github.com/julesklord/ducer-community-scripts';
   }
 
   /**
    * Installs a specific author set or individual plugin from the registry.
+   * 
+   * NOTE: Currently this only initializes local directories. The actual
+   * fetching from the remote registry URL is not yet implemented.
    */
   async installToolset(authorName: string): Promise<string> {
     const targetPath = path.join(this.scriptsDir, authorName);
@@ -34,19 +40,20 @@ export class ScriptManager {
     console.log(`[ScriptManager] Fetching toolset for: ${authorName}...`);
 
     try {
-      // Logic for partial fetching if possible, or simple clone
-      // For now, we simulate a targeted fetch or guide the user
-      // if the external repo is ready.
+      // TODO: Implement actual fetching from registryUrl when available.
+      // For now, we simulate by creating the folder structure locally.
+      // Future implementation options:
+      // - git sparse-checkout for selective cloning
+      // - Fetch and extract ZIP releases
+      // - npm-style package registry
       
       if (!fs.existsSync(this.scriptsDir)) {
         fs.mkdirSync(this.scriptsDir, { recursive: true });
       }
 
-      // Implementation detail: In a real scenario, we'd use git sparse-checkout 
-      // or fetch a ZIP. For PoC, we create the folder and log.
       fs.mkdirSync(targetPath, { recursive: true });
       
-      return `✅ Success: Toolset for "${authorName}" initialized. (Ready to pull core assets).`;
+      return `✅ Success: Toolset for "${authorName}" initialized. (Local placeholder only - remote fetching not yet implemented).`;
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       return `❌ Error installing toolset: ${msg}`;
