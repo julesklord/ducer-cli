@@ -134,6 +134,20 @@ export class MusicToolsManager {
         },
       },
       {
+        name: 'install_producer_toolset',
+        description: 'Installs a complete set of third-party producer scripts/tools for a specific author (e.g., X-Raym, MPL, Sexan). Use when a requested production technique requires external libraries.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            author: {
+              type: 'STRING',
+              description: 'Name of the author or toolset to install (e.g., X-Raym, MPL, ReaperTeam).',
+            },
+          },
+          required: ['author'],
+        },
+      },
+      {
         name: 'get_reaper_status',
         description: 'Get project telemetry (transport, timeline, tracks).',
         parameters: {

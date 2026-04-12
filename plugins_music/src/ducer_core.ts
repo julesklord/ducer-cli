@@ -17,6 +17,7 @@ import {
   LITE_ANALYSIS_ADDON,
 } from './prompts.js';
 import { CompatibilityShield } from './compatibility_check.js';
+import { ScriptManager } from './script_manager.js';
 
 export interface DucerConfig {
   getGeminiClient: () => unknown;
@@ -32,6 +33,7 @@ export class DucerCore {
   private audioAnalyzer: AudioAnalyzer;
   private toolsManager: MusicToolsManager;
   private bridge: DawBridge;
+  private scriptManager: ScriptManager;
 
   private readonly actionsDbPath: string;
 
@@ -40,6 +42,7 @@ export class DucerCore {
     this.audioAnalyzer = new AudioAnalyzer();
     this.toolsManager = new MusicToolsManager();
     this.bridge = bridge;
+    this.scriptManager = new ScriptManager();
     this.actionsDbPath = path.join(
       process.cwd(),
       'ducer-skills',
@@ -162,6 +165,10 @@ export class DucerCore {
             return await this.bridge.executeScript(args.code);
           }
           return 'Error: Scripting not supported by current DAW bridge.';
+        }
+
+        case 'install_producer_toolset': {
+          return await this.scriptManager.installToolset(args.author);
         }
 
         case 'get_reaper_status': {
