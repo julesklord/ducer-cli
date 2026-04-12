@@ -116,23 +116,31 @@ export class DucerCore {
     name: string;
     args: string;
   }): Promise<string> {
-    const args = JSON.parse(call.args);
+    let args: Record<string, unknown>;
+    try {
+      args = JSON.parse(call.args);
+    } catch (parseError) {
+      const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
+      console.error(`[Ducer-Core] Failed to parse tool arguments: ${errorMsg}`);
+      return `Error: Invalid tool arguments JSON - ${errorMsg}`;
+    }
+    
     console.log(`\n[Ducer-Core] Dispatching Tool: ${call.name}`);
 
     try {
       switch (call.name) {
         case 'visualize_audio_features':
           return JSON.stringify(
-            await this.audioAnalyzer.visualize(args.filePath || '', args),
+            await this.audioAnalyzer.visualize(args.filePath as string || '', args),
           );
 
         case 'transcribe_vocals':
           return JSON.stringify(
-            await this.audioAnalyzer.transcribe(args.filePath || ''),
+            await this.audioAnalyzer.transcribe(args.filePath as string || ''),
           );
 
         case 'execute_reaper_action': {
-          const idToExecute = this.resolveActionId(args.action_id);
+          const idToExecute = this.resolveActionId(args.action_id as string);
 
           // Anti-Hallucination: Verify if NOT in our local registry
           if (!this.isInRegistry(idToExecute)) {
@@ -144,31 +152,31 @@ export class DucerCore {
               console.log(
                 `[Ducer-Core] Hallucination detected. Attempting semantic fallback for: ${args.action_id}`,
               );
-              return await this.semanticSearchFallback(args.action_id);
+              return await this.semanticSearchFallback(args.action_id as string);
             }
           }
           return await this.bridge.executeAction(idToExecute);
         }
 
         case 'learn_workflow_macro':
-          return await this.learnMacro(args.name, args.action_id);
+          return await this.learnMacro(args.name as string, args.action_id as string);
 
         case 'get_learned_actions':
           return fs.readFileSync(this.actionsDbPath, 'utf8');
 
         case 'search_actions': {
-          return await this.performAdvancedSearch(args.query);
+          return await this.performAdvancedSearch(args.query as string);
         }
 
         case 'execute_lua_script': {
           if (this.bridge.executeScript) {
-            return await this.bridge.executeScript(args.code);
+            return await this.bridge.executeScript(args.code as string);
           }
           return 'Error: Scripting not supported by current DAW bridge.';
         }
 
         case 'install_producer_toolset': {
-          return await this.scriptManager.installToolset(args.author);
+          return await this.scriptManager.installToolset(args.author as string);
         }
 
         case 'get_reaper_status': {
