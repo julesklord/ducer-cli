@@ -7,6 +7,7 @@
 import {
   exec,
   execFile,
+  execFileSync,
   execSync,
   spawn,
   spawnSync,
@@ -266,25 +267,23 @@ export async function start_sandbox(
         debugLogger.log('building sandbox ...');
         const gcRoot = gcPath.split('/packages/')[0];
         // if project folder has sandbox.Dockerfile under project settings folder, use that
-        let buildArgs = '';
+        const buildArgs: string[] = ['scripts/build_sandbox.js', '-s'];
         const projectSandboxDockerfile = path.join(
           GEMINI_DIR,
           'sandbox.Dockerfile',
         );
         if (isCustomProjectSandbox) {
           debugLogger.log(`using ${projectSandboxDockerfile} for sandbox`);
-          buildArgs += `-f ${path.resolve(projectSandboxDockerfile)} -i ${image}`;
+          buildArgs.push('-f', path.resolve(projectSandboxDockerfile), '-i', image);
         }
-        execSync(
-          `cd ${gcRoot} && node scripts/build_sandbox.js -s ${buildArgs}`,
-          {
-            stdio: 'inherit',
-            env: {
-              ...process.env,
-              GEMINI_SANDBOX: command, // in case sandbox is enabled via flags (see config.ts under cli package)
-            },
+        execFileSync('node', buildArgs, {
+          cwd: gcRoot,
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            GEMINI_SANDBOX: command, // in case sandbox is enabled via flags (see config.ts under cli package)
           },
-        );
+        });
       }
     }
 
