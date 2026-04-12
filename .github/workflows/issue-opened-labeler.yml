@@ -7,6 +7,9 @@ on:
 
 jobs:
   label-issue:
+    permissions:
+      contents: read
+      issues: write
     runs-on: 'ubuntu-latest'
     if: |-
       ${{ github.repository == 'google-gemini/gemini-cli' || github.repository == 'google-gemini/maintainers-gemini-cli' }}
