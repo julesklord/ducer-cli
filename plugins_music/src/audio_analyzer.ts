@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import { promisify } from 'node:util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface VisualizationResult {
   imagePath: string;
@@ -53,14 +53,14 @@ export class AudioAnalyzer {
     const viz = options.viz || 'spectrogram,mel,chroma,loudness';
     const style = options.style || 'magma';
 
-    let command = `songsee "${audioPath}" --viz ${viz} --style ${style} -o "${outputPath}"`;
+    const args = [audioPath, '--viz', viz, '--style', style, '-o', outputPath];
 
-    if (options.start !== undefined) command += ` --start ${options.start}`;
+    if (options.start !== undefined) args.push('--start', String(options.start));
     if (options.duration !== undefined)
-      command += ` --duration ${options.duration}`;
+      args.push('--duration', String(options.duration));
 
     try {
-      await execAsync(command);
+      await execFileAsync('songsee', args);
       return {
         imagePath: outputPath,
         panels: viz.split(','),
@@ -86,10 +86,18 @@ export class AudioAnalyzer {
     const model = options.model || 'turbo';
 
     // Whisper CLI typically outputs a file with the same name as the audio in the target dir
-    const command = `whisper "${audioPath}" --model ${model} --output_format txt --output_dir "${outputDir}"`;
+    const args = [
+      audioPath,
+      '--model',
+      model,
+      '--output_format',
+      'txt',
+      '--output_dir',
+      outputDir,
+    ];
 
     try {
-      await execAsync(command);
+      await execFileAsync('whisper', args);
       const txtPath = path.join(outputDir, `${fileName}.txt`);
 
       if (!fs.existsSync(txtPath)) {
