@@ -257,11 +257,12 @@ export async function findSecretFiles(
     if (depth > maxDepth) return;
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
+      const promises: Promise<void>[] = [];
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           if (!skipDirs.has(entry.name)) {
-            await walk(fullPath, depth + 1);
+            promises.push(walk(fullPath, depth + 1));
           }
         } else if (entry.isFile()) {
           if (isSecretFile(entry.name)) {
@@ -269,6 +270,7 @@ export async function findSecretFiles(
           }
         }
       }
+      await Promise.all(promises);
     } catch {
       // Ignore read errors
     }
