@@ -1,0 +1,16 @@
+{
+  "name": "@google/gemini-cli-plugin-music",
+  "version": "0.40.0",
+  "private": true,
+  "type": "module",
+  "main": "src/router.js",
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4",
+    "@types/node": "^20.11.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

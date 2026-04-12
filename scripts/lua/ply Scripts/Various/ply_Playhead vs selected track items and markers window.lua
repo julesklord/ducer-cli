@@ -1,0 +1,331 @@
+--[[
+@description Playhead vs selected track item & markers (window)
+@version 1.3.0
+@author Paweł Łyżwa (ply)
+@about # Playhead vs selected track item & markers (window)
+  Runs a window which shows:
+   - which item on selected track is under playhead
+   - playhead position relative to item's position and source
+   - list of markers before playhead (id, name, color, and position relative to playhead)
+   - next recording pass number (guessed)
+
+  Use a mouse wheel to change font size.
+@screenshot https://ply.github.io/ReaScripts/doc/img/Playhead_vs_selected_track_items_and_markers_window.png
+@changelog
+	Support action toggle.
+	Reduce CPU load by throttling updates.
+	When there are multiple items under the cursor, display a name of the last one in the timeline order, instead of the first.
+	Always display a name of item before playhead, instead of skipping it when there are further items on the track.
+
+
+Copyright (C) 2020--2025 Paweł Łyżwa
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+]]--
+
+-- globals ---------------------------------------------------------------------
+
+local NAME = "Playhead vs selected track item & markers"
+local EXT_STATE_SECTION = "ply: "..NAME
+local COL1TXT = "item before playhead:  " -- longest possible label
+local col1w -- internal state
+local fontsize -- saved settings
+local last_update_ts = 0
+local last_w = nil
+local last_h = nil
+
+-- gfx helpers -----------------------------------------------------------------
+
+local function gfx_set_color(r, g, b, a)
+	--[[	gfx_set_color(r, g, b, a)
+		gfx_set_color(r, g, b) -- keeps gfx.a unchanged
+		gfx_set_color(w, a) -- gray
+		gfx_set_color(w) -- keeps gfx.a unchanged	]]--
+	gfx.a = a or gfx.a
+	gfx.r = r
+	gfx.g = g or r
+	gfx.b = b or r
+	if g and not b then
+		gfx.a = g
+		gfx.g = r
+	end
+end
+
+local function gfx_newline()
+	gfx.x = 0
+	gfx.y = gfx.y + gfx.texth
+end
+
+local function gfx_rdraw_str(str)
+	gfx.x = gfx.x - gfx.measurestr(str)
+	gfx.drawstr(str)
+end
+
+-- general helpers -------------------------------------------------------------
+
+local function get_rich_track_item(track, i)
+	local item = reaper.GetTrackMediaItem(track, i)
+	local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+	return {
+		item = item,
+		start = item_start,
+		end_ = item_start + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+	}
+end
+
+--------------------------------------------------------------------------------------
+-- Get the last item on the track under or before given timeline position
+--
+-- @param track   MediaTrack
+-- @param pos     Position in the timeline
+--
+-- @return under  true if the item is under the pos, false if before, nil if there's no items
+-- @return item   MediaItem
+--------------------------------------------------------------------------------------
+local function get_last_track_item_for_pos(track, pos)
+	if not track then return nil, nil end
+	local last_item
+	for i = 0, reaper.CountTrackMediaItems(track)-1 do
+		-- assuming timeline order of items
+		local item = get_rich_track_item(track, i)
+		if item.start <= pos then
+			last_item = item
+		end
+	end
+	if last_item then
+		return (last_item.end_ >= pos), last_item.item
+	else
+		return nil, nil
+	end
+end
+
+local function get_markers_before_pos(pos)
+	local markers = {}
+	local _, proj = reaper.EnumProjects(-1)
+	local _, num_markers, num_regions = reaper.CountProjectMarkers(proj)
+	for i = 0, (num_markers+num_regions-1) do
+		local _, isrgn, mpos, _, mname, mid, mcolor = reaper.EnumProjectMarkers3(proj, i)
+		if mpos > pos then break end
+		if not isrgn then
+			table.insert(markers, {
+				["id"] = mid,
+				["name"] = mname,
+				["pos"] = mpos,
+				["color"] = mcolor,
+			})
+		end
+	end
+	return markers
+end
+
+local function guess_next_recpass()
+	local recpass = 0
+	for itemidx = 0, reaper.CountMediaItems(0) - 1 do
+		local item = reaper.GetMediaItem(0, itemidx)
+		for takeidx = 0, reaper.GetMediaItemNumTakes(item) - 1 do
+			local take = reaper.GetTake(item, takeidx)
+			if take then
+				recpass = math.max(recpass, reaper.GetMediaItemTakeInfo_Value(take, "I_RECPASSID"))
+			end
+		end
+	end
+	return math.tointeger(recpass + 1)
+end
+
+-- GUI logic -------------------------------------------------------------------
+
+local function set_font()
+	gfx.setfont(1, "Arial", fontsize*gfx.ext_retina, "b")
+	col1w = gfx.measurestr(COL1TXT)
+end
+
+local function finalise()
+	-- save settings, window size & dock status
+	reaper.SetExtState(EXT_STATE_SECTION, "fontsize", tostring(fontsize), true)
+	local dock, x, y, w, h = gfx.dock(-1, 0, 0, 0, 0)
+	reaper.SetExtState(EXT_STATE_SECTION, "dock", tostring(dock), true)
+	reaper.SetExtState(EXT_STATE_SECTION, "x", tostring(x), true)
+	reaper.SetExtState(EXT_STATE_SECTION, "y", tostring(y), true)
+	reaper.SetExtState(EXT_STATE_SECTION, "w", tostring(w/gfx.ext_retina), true)
+	reaper.SetExtState(EXT_STATE_SECTION, "h", tostring(h/gfx.ext_retina), true)
+	-- set script state to off
+	-- TODO: for some unknown reason this doesn't work when the window was closed by the user
+	reaper.set_action_options(8)
+end
+
+local function init()
+	-- load options
+	local dock = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "dock")) or 0
+	local x = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "x"))
+	local y = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "y"))
+	local w = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "w")) or 400
+	local h = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "h")) or 170
+	fontsize = tonumber(reaper.GetExtState(EXT_STATE_SECTION, "fontsize")) or 20
+
+	gfx.ext_retina = 1.0 -- enable high resolution support
+	gfx.init(NAME, w, h, dock, x, y)
+	if gfx.ext_retina ~= 1.0 then
+		gfx.quit()
+		gfx.init(NAME, w*gfx.ext_retina, h*gfx.ext_retina, dock, x, y)
+	end
+	set_font()
+	col1w = gfx.measurestr(COL1TXT)
+
+	-- set script state to on and set to terminate when re-launched
+	reaper.set_action_options(5)
+	reaper.atexit(finalise)
+end
+
+local function handle_mouse_events()
+	-- resize font if on mouse wheel
+	if gfx.mouse_wheel ~= 0 then
+		if gfx.mouse_wheel > 0 then
+			fontsize = fontsize < 120 and fontsize + 1 or 120
+		elseif fontsize > 8 then
+			fontsize = fontsize - 1
+		end
+		gfx.mouse_wheel = 0
+		set_font()
+	end
+end
+
+local function run()
+	-- break the loop when the window was closed
+	if gfx.getchar(-1) == -1 then return end
+
+	-- reduce CPU load by throttling updates
+	if    last_w == gfx.w
+	  and last_h == gfx.h
+	  and reaper.time_precise() - last_update_ts < 0.08
+	then
+		reaper.defer(run)
+		return
+	end
+
+	set_font() -- because gfx.ext_retina can change
+	handle_mouse_events()
+
+	local default_marker_color = reaper.GetThemeColor("marker", 0)
+	local track = reaper.GetSelectedTrack(0, 0)
+	local pos = (reaper.GetPlayState() == 0) and reaper.GetCursorPosition() or reaper.GetPlayPosition()
+
+	gfx.x = 0
+	gfx.y = 0
+
+	gfx_set_color(0.7)
+	gfx.drawstr("Selected track:  ")
+	gfx.x = col1w
+	if track then
+		local _, track_name = reaper.GetTrackName(track)
+		gfx_set_color(0.9)
+		gfx.drawstr(track_name)
+	else
+		gfx.drawstr("[no track selected]")
+	end
+
+	gfx_newline()
+	local under, item = get_last_track_item_for_pos(track, pos)
+	gfx_set_color(0.7)
+	gfx.drawstr("Item ")
+	if under then
+		gfx_set_color(0, 1, 0)
+		gfx.drawstr("under ")
+	else
+		gfx_set_color(1, 0, 0)
+		gfx.drawstr("before ")
+	end
+	gfx_set_color(0.7)
+	gfx.drawstr("playhead:  ")
+	if item then
+		local take = reaper.GetActiveTake(item)
+		if take then
+			gfx_set_color(1, 1, 0)
+			gfx.x = col1w
+			gfx.drawstr(reaper.GetTakeName(take))
+		end
+	end
+
+	local item_pos = item and reaper.GetMediaItemInfo_Value(item, "D_POSITION") or nil
+
+	gfx_newline()
+	gfx_set_color(0.7)
+	gfx.drawstr("Position within item:  ")
+	if item and under then
+		gfx_set_color(0.9)
+		gfx.x = col1w
+		gfx.drawstr(reaper.format_timestr_pos(pos - item_pos, "", -1))
+	end
+
+	gfx_newline()
+	gfx_set_color(0.7)
+	gfx.drawstr("Source time position:  ")
+	if item and under then
+		local take = reaper.GetActiveTake(item)
+		if take then
+			gfx_set_color(0.9)
+			gfx.x = col1w
+			gfx.drawstr(reaper.format_timestr_pos(
+				pos - item_pos + reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS"),
+				"",
+				-1))
+		end
+	end
+
+	gfx_newline()
+	gfx.y = gfx.y + gfx.texth/2
+	gfx_set_color(0.7)
+	gfx.drawstr("Guessed next recording pass number: ")
+	gfx_set_color(0.2, 0.8, 1)
+	gfx.drawstr(guess_next_recpass())
+
+	gfx_newline()
+	gfx_set_color(0.9)
+	gfx.drawstr("Last markers (reverse order):")
+	gfx_newline()
+	local markers = get_markers_before_pos(pos)
+	local pos_w = gfx.measurestr("-"..reaper.format_timestr_pos(3600000, "", -1))
+	while gfx.y < gfx.h and #markers > 0 do
+		local marker = table.remove(markers)
+		-- time elapsed
+		gfx_set_color(0.5)
+		gfx.x = pos_w
+		gfx_rdraw_str("-"..reaper.format_timestr_pos(pos-marker.pos, "", -1))
+		-- color indicator
+		local color = marker.color
+		if color == 0 then
+			color = default_marker_color
+		end
+		local r, g, b = reaper.ColorFromNative(color)
+		gfx_set_color(r/255, g/255, b/255)
+		gfx.x = gfx.x+gfx.measurestr("v")
+		gfx.rect(gfx.x, gfx.y+1, gfx.measurestr("v"), gfx.texth-1)
+		-- id (number)
+		gfx_set_color(0.9)
+		gfx.x = gfx.x + gfx.measurestr( "v000   ")
+		gfx_rdraw_str(marker.id.."  ")
+		-- name
+		gfx_set_color(0.7)
+		gfx.drawstr(marker.name)
+		gfx_newline()
+	end
+
+	gfx.update()
+	last_update_ts = reaper.time_precise()
+	last_w = gfx.w
+	last_h = gfx.h
+	reaper.defer(run)
+end
+
+init()
+run()

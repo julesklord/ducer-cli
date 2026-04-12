@@ -1,0 +1,65 @@
+# REAPER Automation Knowledge Base - Julio's Workflow
+
+## Formato
+- action_id|descripción|saludo_usuario|categoría
+
+## TRANSPORTE
+40044|Play|Reproducir|transporte
+40045|Stop|Detener|transporte
+40046|Pause|Pausar|transporte
+41878|Rewind|Rebobinar|transporte
+41879|FastForward|Avanzar|transporte
+
+## BACKUP / SEGURIDAD
+40019|Save project|Guardar proyecto|backup
+40020|Undo|Deshacer|backup
+40021|Redo|Rehacer|backup
+40476|Save Mixing Mode Screenset|Guardar screenset mixing|backup
+40474|Save Record Mode Screenset|Guardar screenset recording|backup
+
+## ORGANIZACIÓN DE TRACKS
+5d9e88d6c8bfac4daff06eb40d3af4c9|Insert New Track|Crear track nuevo|organizar
+40441|Select All Tracks|Seleccionar todos los tracks|organizar
+40429|Delete selected tracks|Eliminar tracks|organizar
+40407|Unselect all tracks|Deseleccionar todo|organizar
+40173|Select items under edit cursor|Seleccionar items en cursor|organizar
+41709|Set tracks to sidebar size|Tracks sidebar|organizar
+41708|Set tracks to wide size|Tracks anchos|organizar
+41710|Set tracks to thin size|Tracks delgados|organizar
+41713|Set tracks to strip size|Tracks pequenos|organizar
+
+## RUTEOS / SENDS
+f1b3421b4e92f548b37bd259a9c48b0b|Create multiple sends tool|Crear multiples sends|routing
+c7ce849e0d0a024284e2540a8786ec05|FX Send Tool|Herramienta de sends|routing
+8a35ce771b12b444807c4466a3bed631|Submix selected to stereo BUS|Submix a bus|routing
+d9a3788b8385744fbf937f1c2ad8003e|Reset mixer track heights|Resetear alturas mixer|routing
+46f69ab98539ca4eb9adaf4e8233067b|Resize MIX & STEMS by Master|Resize por master|routing
+006c1d16fcfac74cb9b3b5d54288eba7|Open send level defaults|Defaults de sends|routing
+
+## LIMPIEZA DE PISTAS
+40296|Delete all icons|Eliminar todos los iconos|cleanup
+726b2bebe802214a995911bf86d22d26|Delete all icons|Eliminar iconos|cleanup
+163|Remove icon from selected tracks|Quitar icono|cleanup
+d37175da29f39adc3216e0451dfe414b5f521ec6|nofish_Delete muted items|Borrar items silenciados|cleanup
+40297|Unselect all tracks|Deseleccionar todo|cleanup
+40527|Clear all clip indicators|Limpiar indicadores|cleanup
+X-Raym_Clean inactive and hidden envelopes|Limpiar envelopes inactivos|cleanup
+
+## GAIN STAGING / VOLUMEN
+f32096e935fa24e9328c63d1109a624|Toggle gain reduction meter|Mostrar medidores gain|volume
+9f18ccb29ab45148828ed72cd62b2268|Reset vol pan width selected tracks|Resetear volumen y pan|volume
+42705|Gain reduction meter|Medidor de reduccion gain|volume
+ba521d738137d14f83868541e9b2a8f4|Set meters to multichannel PEAKS|Picos multicanal|volume
+facbc4bb6e6f7c47aa7d7aab39ae26d5|Set meters to stereo RMS|RMS stereo|volume
+ac5bd9083749724ab1ca3e61b9427bcf|Set meters to LUFS-S|LUFS|volume
+
+## FX / EFECTOS
+5ddceb42f4f3c748b38f6b443360631e|Insert RE-EQ on selected|Insertar EQ|fx
+e39b971075f75f4ba885753ce834cf16|Insert Compressor|Insertar compresor|fx
+d4bf5ed296785f40a8f7ba8573a199fe|Toggle RE-EQ bypass|Toggle EQ|fx
+088b29c21597a54fae5dfed2e740f519|Toggle D-Compressor bypass|Toggle compressor|fx
+312b1d37bbf911468fd0c1b8784d6f81|Toggle embed FX in selected|Embedder FX|fx
+9c27ed3aa2f8ac4f8d90a8053285db5b|Toggle embed FX in BUS|Embedder FX bus|fx
+585af322f3e0184ebd142bd7bed07cc3|Open/close Bypass FX Tool|Bypass tool|fx
+40289|Toggle bypass all FX for selected tracks|Bypass todos los FX|fx
+_RS住的|Downloaded|iBassist|

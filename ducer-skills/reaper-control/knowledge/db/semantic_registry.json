@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "categories": {
+    "transport": ["play", "stop", "pause", "record", "rewind", "seek"],
+    "cleanup": ["strip silence", "vocal clean", "noise gate", "remove muted", "clear clips"],
+    "dynamics": ["compress", "limit", "gate", "expand", "normalize", "gain stage"],
+    "organization": ["add track", "delete track", "color track", "group", "folder", "rename"],
+    "editing": ["split", "glue", "trim", "fade", "crossfade", "nudge"],
+    "fx": ["insert fx", "bypass fx", "preset", "chain", "fx browser"]
+  },
+  "actions": [
+    { "id": "40044", "name": "Transport: Play", "tags": ["play", "start"], "confidence": 1.0 },
+    { "id": "40045", "name": "Transport: Stop", "tags": ["stop", "halt"], "confidence": 1.0 },
+    { "id": "40046", "name": "Transport: Pause", "tags": ["pause"], "confidence": 1.0 },
+    { "id": "40047", "name": "Transport: Record", "tags": ["record", "track"], "confidence": 1.0 },
+    { "id": "40108", "name": "Item: Normalize", "tags": ["normalize", "gain stage", "0db"], "confidence": 1.0 },
+    { "id": "40001", "name": "Track: Insert new track", "tags": ["add track", "new track"], "confidence": 1.0 },
+    { "id": "40429", "name": "Track: Delete selected tracks", "tags": ["delete track", "remove track"], "confidence": 1.0 },
+    { "id": "40289", "name": "Track: Toggle bypass all FX for selected tracks", "tags": ["bypass fx", "mute fx"], "confidence": 1.0 },
+    { "id": "40296", "name": "Track: Delete all track icons", "tags": ["cleanup", "icons"], "confidence": 0.9 },
+    { "id": "41878", "name": "Transport: Rewind", "tags": ["rewind", "back"], "confidence": 1.0 },
+    { "id": "41879", "name": "Transport: Fast Forward", "tags": ["forward", "next"], "confidence": 1.0 }
+  ],
+  "expert_workflows": [
+    {
+      "name": "Vocal Cleanup",
+      "steps": [
+        { "action": "Select all items on selected tracks" },
+        { "action": "Auto trim/split items (strip silence)" },
+        { "action": "Normalize selected items" },
+        { "action": "Apply Vocal FX Chain" }
+      ],
+      "description": "Standard professional vocal preparation chain."
+    },
+    {
+      "name": "Stem Prep",
+      "steps": [
+        { "action": "Consolidate/export tracks" },
+        { "action": "Reset all faders to 0dB" },
+        { "action": "Remove unused tracks" }
+      ],
+      "description": "Prepares the session for external mixing/collaboration."
+    }
+  ]
+}

@@ -27,6 +27,7 @@ powerful tool for developers.
   - `packages/devtools`: Integrated developer tools (Network/Console inspector).
   - `packages/test-utils`: Shared test utilities and test rig.
   - `packages/vscode-ide-companion`: VS Code extension pairing with the CLI.
+  - `plugins_music`: (Ducer) Isolated music producer layer for DAW integration and audio analysis.
 
 ## Building and Running
 

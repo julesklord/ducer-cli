@@ -63,6 +63,8 @@ export default tseslint.config(
       'packages/test-utils/**',
       '.gemini/**',
       '**/*.d.ts',
+      'scripts/**',
+      'ducer-skills/**',
     ],
   },
   eslint.configs.recommended,

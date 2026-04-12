@@ -1,0 +1,141 @@
+# REAPER Actions Knowledge Base
+
+## Formato
+- Cada línea: `action_id|descripción_corta|sinónimos_búsqueda`
+- Los sinónimos son términos que el usuario podría decir
+
+## Transporte
+40044|Play|Reproducir, Iniciar, Darle play, start playback
+40045|Stop|DDetener, Parar, stop playback  
+40046|Pause|Pausar, pausa
+40047|Record|calar, begin recording
+41878|Rewind|Retroceder, rebobinar, ir atrás
+41879|Forward|Avanzar, ir adelante, fast forward
+
+## Track Management
+5d9e88d6c8bfac4daff06eb40d3af4c9|Insert New Tracks|Crear tracks, nuevo track, agregar pista
+40441|Select All Tracks|Seleccionar todos los tracks, seleccionar todo
+40429|Delete selected tracks|Eliminar tracks, borrar tracks
+40407|Unselect all tracks|Deseleccionar todo, limpiar selección
+40173|Select items under edit cursor|Seleccionar items en cursor
+
+## Track Size/Zoom
+41713|Set tracks to strip size|Tracks pequeños, strip size
+41710|Set tracks to thin size|Tracks delgados
+41708|Set tracks to wide size|Tracks anchos
+41709|Set tracks to sidebar size|Tracks sidebar
+40474|Save Mixing Mode Screenset|Guardar screenset mixing
+40476|Save Record Mode Screenset|Guardar screenset recording
+40475|Load Mixing Mode Screenset|Cargar screenset mixing
+40477|Load Record Mode Screenset|Cargar screenset recording
+
+## Mixer
+2dca2fd6e6be0b4ab4e2b661ca2d8035|Show Visual Mixer|Mixer visual, visual mixer
+e0a0e1d9b2be3749926ac13c842d4e05|Show mixer normal/wide layout|Mixer normal, mixer wide
+fcf6217705a4914e9d714fa8fce996f2|Show mixer narrow layout|Mixer narrow
+dfdc76cf5cc04244833f2e307774bbb9|Show mixer thin layout|Mixer thin
+d9a3788b8385744fbf937f1c2ad8003e|Reset mixer track heights by master|Reset mixer, igualar alturas mixer
+46f69ab98539ca4eb9adaf4e8233067b|Resize MIX & STEMS by Master|Resize por master
+
+## FX
+5ddceb42f4f3c748b38f6b443360631e|Insert RE-EQ on selected|Insertar EQ, agregar EQ
+e39b971075f75f4ba885753ce834cf16|Insert Compressor|Compresor, insertar compressor
+d4bf5ed296785f40a8f7ba8573a199fe|Toggle RE-EQ bypass|Quitar bypass EQ, activar EQ
+088b29c21597a54fae5dfed2e740f519|Toggle D-Compressor bypass|Quitar bypass comp, activar compressor
+2779aa88f4a77a44810effc060e44f13|Show FX in center of screen|FX al centro, mostrar FX
+312b1d37bbf911468fd0c1b8784d6f81|Toggle embed FX in selected tracks|Embedder FX, FX embebido
+9c27ed3aa2f8ac4f8d90a8053285db5b|Toggle embed FX in BUS tracks|Embedder BUS, FX embebido bus
+585af322f3e0184ebd142bd7bed07cc3|Open/Close Bypass FX Tool|Bypass tool
+702904f8a4cbcf468246444d0c4ef105|Show FX browser|Browser FX, explorar FX
+39b52900ef25f14ba06c4d5c732ee123|Open/close FX Presets Manager|Presets manager
+
+## Send/BUS
+8a35ce771b12b444807c4466a3bed631|Submix selected to stereo BUS|Submix, crear bus
+f1b3421b4e92f548b37bd259a9c48b0b|Create multiple sends tool|Múltiples sends, send tool
+c7ce849e0d0a024284e2540a8786ec05|FX Send Tool|Send tool, herramienta de sends
+006c1d16fcfac74cb9b3b5d54288eba7|Open send level defaults in Preferences|Defaults de sends
+
+## View/Zoom
+4ffd5bfd4e4c884da521c74735244b2a|Zoom IN horizontal|Acercar, zoom in, ampliar
+5322d76401923445b86bb4fa15e58e9b|Zoom OUT horizontal|Alejar, zoom out, reducir
+dcae7c0855b4a042972554b129f45b0c|Zoom arrange to fit screen|Fit screen, ajustar a pantalla
+1734d4e01a6e8c4b8acb660bc0d1a051|Zoom out full project|Zoom out todo, vista completa
+e8cc4d1cc3c4034db0c07002f9a12941|Zoom track small|Zoom track pequeño
+5858874b65da8d42a6b8542a7a0c86e3|Zoom track medium|Zoom track mediano
+9f78455306ddcb42bca5db289dc91066|Zoom track big|Zoom track grande
+9b40af9c9c4daf4fa820b57a9349fd7d|Zoom track extra big|Zoom track muy grande
+
+## Markers
+586cd0b80ed4df4e9fef7f9b7afe1d5a|Insert Marker|Crear marcador, marker
+61104a698d24b14594b659b4270be804|Open/close Markers Manager|Gestor de marcadores
+d584b69849b5a943aa848b97d810a01f|Open marker list|Lista de marcadores
+40058|Go to marker 1|Ir a marker 1
+40059|Go to marker 2|Ir a marker 2
+
+## Navigation
+9dee28268463804c8377d542d4456ca0|Go to start of project|Ir al inicio, inicio del proyecto
+41878|Rewind|retroceder, rewind
+41879|Fast Forward|avanzar, forward
+
+## Items
+eb6c2008006ca0499a4075b49fba6c62|Move item grabber|Mover item, desplazar
+71328b498282c84bbdc2d3d6ba666835|Split item at cursor|Split, dividir item
+419248a3547c2945b61592c3e7ab0b7e|Heal splits|Juntar splits, heal
+54b27c2fb1bba94cbbc1a6d2fe4a201e|Select Item|Seleccionar item
+abf396cc16726849a9ae9f35315b214a|Glue selected items|Juntar items, glue
+53eb2037650efa4f8cd25fc30b8d68d5|Move active takes to top|Mover takes al top
+
+## MIDI
+75941fdffe0fd84eba9db6542c4915c8|Open/Close MIDI Editor|Abrir MIDI editor
+b0379d7f434f13458644f0bba6f9337b|Open/close inline MIDI editor|MIDI inline editor
+317e15035f62274d8da809c097afc0e1|Select items and time selection|Seleccionar con time selection
+02e727721f8de94792725bcfb21f31dd|Sower Step Sequencer|Sequencer, step sequencer
+
+## Recording
+7530fbbf3e691145ba84da09d414868b|Record making new takes|Nuevas takes, recording mode
+fed0eaecab4dac4ab5b7392076b2d5f0|Record tape style|Tape style, grabacion tape
+41186|Record|calar
+40668|Stop recording and delete|Detener y borrar grabacion
+b7c027f9bec0ba48a33dda92b0c58efa|Toggle fixed item lanes|Fixed lanes, item lanes
+
+## Automation
+90089689dd764a439a6281f4c11d5345|Open/close Automation Tools|Herramientas automation
+40472|Toggle record automation|Grabar automation
+41873|Write automation|Escribir automation
+
+## Rendering
+9b2bdc23d7c6934180fdbe123905e75c|Render Mix for Mastering|Renderizar, exportar master
+2829d1d8861ddc42852d3e213c4a5676|Stem Manager Export|Exportar stems, stems manager
+9b0bdc8606f26149804cb1dd8def1f11|Open/close Stems Manager|Stems manager
+
+## Project
+48f8e3579e2ac34aa981a50205051562|Project navigator|Navegador proyecto
+93cf5b9ae9bc4e44b8c160145962316d|Reset Project Mix Mode|Reset proyecto mixing
+b0656ab326ab684389824c34fac5c1e5|Reset Project Rec Mode|Reset proyecto recording
+
+## Windows/Toolbars
+7afa6e27ed6ceb48acd03ff7baafce9d|Close right side toolbars|Cerrar toolbars lateral
+7da9133f63ea0d4cbd8c348b90b9e20b|Open/Close Track Controls|Track controls
+9ce7ab65b1ee1e42b49e06dbb285028e|Open/close Track Selection|Track selection window
+c6a6f0e410a51e439a6ccd3b58cc7800|Open/close Media Explorer|Media explorer
+018ae88666180949a5567b917bfd1af5|Folder Tools|Folder tools
+90089689dd764a439a6281f4c11d5345|Automation Tools|Automation tools
+90089689dd764a439a6281f4c11d5345|Input FX Tools|Input FX
+1de462b1314d0a41b25ef638556234f8|Recording Comping tools|Recording comping
+e7f1837768c65c42928467ff175aec20|ReArtist FX Adder|FX adder
+
+## Tempo
+13ad6f365305914b92d0967b03599bec|Insert 4 points at envelope|Insertar puntos envelope
+_X-Raym_Tap tempo_|Tap tempo|Tap tempo, marcar tempo
+_Cfillion_Tempo|Move tempo marker|Mover tempo marker
+
+## Utilities
+39b52900ef25f14ba06c4d5c732ee123|FX Presets Manager|Gestor presets FX
+585af322f3e0184ebd142bd7bed07cc3|Bypass FX Tool|Bypass tool
+61104a698d24b14594b659b4270be804|Markers Manager|Gestor marcadores
+9b0bdc8606f26149804cb1dd8def1f11|Stems Manager|Gestor stems
+a14703e4fe5228439c5783e90bbf1398|Layout Manager|Gestor layout
+90089689dd764a439a6281f4c11d5345|Automation Tools|Automation
+db1e264b18f13841a08b930b71c3ff6f|Input FX Tools|Input FX
+7bcafb116b85b14f93e77cdae0af8071|Show matrix|Matrix
+c48cf07a1cb89745a3e606ebf1065434|Show grouping window|Grouping, grupos
