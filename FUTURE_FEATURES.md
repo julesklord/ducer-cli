@@ -4,39 +4,49 @@ This document outlines the vision for evolving the Ducer-CLI (Producer Edition)
 from a Gemini-based tool into a standalone professional audio production
 assistant.
 
-## Phase 1: Identity & Rebranding (Q2 2026)
+## Phase 1: Identity & Resilience (Q2 2026) - **STABLE**
 
 - [x] Create `ducer` global alias.
-- [x] Implement Ducer-specific system prompts (Producer/Engineer persona).
+- [x] Implement Ducer-specific high-density system prompts.
+- [x] **Compatibility Shield**: Protect Ducer from upstream Gemini CLI breaking
+      changes.
+- [x] **Token-Wise Optimization**: Condensed Technical English logic for cost
+      efficiency.
+- [x] **Unified Persona**: Ensure all model responses refer to the entity as
+      "Ducer".
+- [x] **Professional Identity**: High-impact README and AI-generated branding.
 - [ ] **Custom Splash Screen**: Replace generic startup with a professional
       ASCII DAW interface.
-- [ ] **Unified Persona**: Ensure all model responses refer to the entity as
-      "Ducer".
-- [ ] **Branded Artifacts**: Complete the transition of all report themes to the
-      high-contrast Ducer aesthetics.
 
-## Phase 2: REAPER Deep Integration (Current)
+## Phase 2: REAPER Deep Integration (Current) - **STABLE**
 
 - [x] Static indexing of `db.ReaperKeyMap`.
-- [x] Bidirectional file-based bridge (OpenClaw).
+- [x] Bidirectional file-based bridge (`ReaperBridgeClient`).
 - [x] Interactive project context scanning (Tracks, Play state).
-- [ ] **Complex Routing Lua Generator**: Train the model context to generate
-      advanced routing scripts (Sidechaining, Stem-bussing).
+- [x] **Complex Routing Lua Generator**: Logic for advanced automation (Stem
+      bussing, FX chains).
 - [ ] **Live Telemetry**: Real-time monitoring of REAPER CPU and peak levels
       from the CLI.
 
 ## Phase 3: Audiovisual & Multimodal (Q3 2026)
 
+- [x] **Multimodal Audio Analysis Engine**: High-fidelity analysis of frequency
+      and dynamics.
 - [ ] **Video Analysis**: Support for frame-by-frame analysis for film scoring.
 - [ ] **MIDI Export**: Allow Ducer to generate and pipe `.mid` files directly
       into REAPER.
-- [ ] **Multitrack Stemming**: Integration with AI stemming libraries to split
-      files before analysis.
+- [ ] **Multitrack Stemming**: AI-based file splitting before deep analysis.
 
-## Phase 4: Hardware & Ecosystem (Long Term)
+## Phase 4: Portability & Hardware (Long Term)
 
+- [x] **DawBridge Abstraction**: Core decoupled from REAPER, ready for new
+      integrations.
+- [ ] **Multi-DAW Expansion**: Support for Ableton Live and Logic Pro.
 - [ ] **MIDI Controller Bridge**: Mapping Ducer commands to physical buttons.
 - [ ] **Voice Control**: Native STT (Speech-to-Text) for "hands-free" DAW
       control.
-- [ ] **Plugin Wrapper**: A VST/CLAP version of Ducer that hosts the CLI logic
+- [ ] **Plugin Wrapper**: VST/CLAP version of Ducer acting as a bridge host
       inside the DAW.
+
+---
+*Ducer v0.41.0: Professional, Reliable, and Prototyped.*
