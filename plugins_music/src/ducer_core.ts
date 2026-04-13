@@ -9,7 +9,7 @@ import path from 'node:path';
 import { MusicMediaHandler } from './media_handler.js';
 import { AudioAnalyzer } from './audio_analyzer.js';
 import { MusicToolsManager } from './tools_manager.js';
-import { DawBridge } from './bridge_interface.js';
+import type { DawBridge } from './bridge_interface.js';
 import {
   DUCER_CORE_PROMPT,
   DAW_CONTROL_PROMPT,
@@ -82,33 +82,73 @@ export class DucerCore {
     CompatibilityShield.validateGeminiClient(geminiClient);
 
     const sessionId = config.getSessionId();
-    let fullResponse = '';
-
     const systemPrompt = this.getSystemPrompt(mode) + '\n\n' + context;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const responseStream = (geminiClient as any).sendMessageStream(
-      [{ text: systemPrompt + '\n\nUSER: ' + query }],
-      new AbortController().signal,
-      sessionId,
-      this.toolsManager.getMusicToolsDeclarations(),
-      false,
-      'Ducer Insight Engine',
-    );
+    const toolDeclarations = this.toolsManager.getMusicToolsDeclarations();
 
-    for await (const event of responseStream) {
-      if (event.type === 'content') {
-        process.stdout.write(event.value);
-        fullResponse += event.value;
+    // Historial de mensajes para el loop multi-turn
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'user', content: systemPrompt + '\n\nUSER: ' + query },
+    ];
+
+    let fullResponse = '';
+    let continueLoop = true;
+
+    while (continueLoop) {
+      continueLoop = false; // se pone en true si hay tool-calls
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseStream = (geminiClient as any).sendMessageStream(
+        messages.map((m) => ({ text: m.content })),
+        new AbortController().signal,
+        sessionId,
+        toolDeclarations,
+        false,
+        'Ducer Insight Engine',
+      );
+
+      const toolCallsThisTurn: Array<{ name: string; args: string }> = [];
+      let assistantTextThisTurn = '';
+
+      for await (const event of responseStream) {
+        if (event.type === 'content') {
+          process.stdout.write(event.value);
+          fullResponse += event.value;
+          assistantTextThisTurn += event.value;
+        }
+        if (event.type === 'tool-call') {
+          toolCallsThisTurn.push(event.value);
+        }
       }
-      if (event.type === 'tool-call') {
-        const result = await this.dispatchTool(event.value);
-        console.log(`\n[Ducer sensory-input]: ${result.substring(0, 100)}...`);
+
+      // Appendear respuesta del asistente al historial
+      if (assistantTextThisTurn) {
+        messages.push({ role: 'assistant', content: assistantTextThisTurn });
+      }
+
+      // Si hubo tool-calls, ejecutarlas y appendear resultados
+      if (toolCallsThisTurn.length > 0) {
+        continueLoop = true;
+        const toolResultParts: string[] = [];
+
+        for (const call of toolCallsThisTurn) {
+          console.log(`\n[Ducer] Ejecutando tool: ${call.name}`);
+          const result = await this.dispatchTool(call);
+          console.log(
+            `[Ducer] Tool result (preview): ${result.substring(0, 120)}...`,
+          );
+          toolResultParts.push(`[TOOL: ${call.name}]\nRESULT: ${result}`);
+        }
+
+        // Appendear resultados como mensaje del usuario (formato que acepta Gemini)
+        messages.push({
+          role: 'user',
+          content: toolResultParts.join('\n\n'),
+        });
       }
     }
 
     return fullResponse;
   }
-
   /**
    * Dispatches music-specific tool calls.
    */
@@ -120,27 +160,33 @@ export class DucerCore {
     try {
       args = JSON.parse(call.args);
     } catch (parseError) {
-      const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
+      const errorMsg =
+        parseError instanceof Error ? parseError.message : String(parseError);
       console.error(`[Ducer-Core] Failed to parse tool arguments: ${errorMsg}`);
       return `Error: Invalid tool arguments JSON - ${errorMsg}`;
     }
-    
+
     console.log(`\n[Ducer-Core] Dispatching Tool: ${call.name}`);
 
     try {
       switch (call.name) {
         case 'visualize_audio_features':
           return JSON.stringify(
-            await this.audioAnalyzer.visualize(args.filePath as string || '', args),
+            await this.audioAnalyzer.visualize(
+              (args['filePath'] as string) || '',
+              args,
+            ),
           );
 
         case 'transcribe_vocals':
           return JSON.stringify(
-            await this.audioAnalyzer.transcribe(args.filePath as string || ''),
+            await this.audioAnalyzer.transcribe(
+              (args['filePath'] as string) || '',
+            ),
           );
 
         case 'execute_reaper_action': {
-          const idToExecute = this.resolveActionId(args.action_id as string);
+          const idToExecute = this.resolveActionId(args['action_id'] as string);
 
           // Anti-Hallucination: Verify if NOT in our local registry
           if (!this.isInRegistry(idToExecute)) {
@@ -150,33 +196,40 @@ export class DucerCore {
             const validation = await this.bridge.validateAction(idToExecute);
             if (!validation.valid) {
               console.log(
-                `[Ducer-Core] Hallucination detected. Attempting semantic fallback for: ${args.action_id}`,
+                `[Ducer-Core] Hallucination detected. Attempting semantic fallback for: ${args['action_id']}`,
               );
-              return await this.semanticSearchFallback(args.action_id as string);
+              return await this.semanticSearchFallback(
+                args['action_id'] as string,
+              );
             }
           }
           return await this.bridge.executeAction(idToExecute);
         }
 
         case 'learn_workflow_macro':
-          return await this.learnMacro(args.name as string, args.action_id as string);
+          return await this.learnMacro(
+            args['name'] as string,
+            args['action_id'] as string,
+          );
 
         case 'get_learned_actions':
           return fs.readFileSync(this.actionsDbPath, 'utf8');
 
         case 'search_actions': {
-          return await this.performAdvancedSearch(args.query as string);
+          return await this.performAdvancedSearch(args['query'] as string);
         }
 
         case 'execute_lua_script': {
           if (this.bridge.executeScript) {
-            return await this.bridge.executeScript(args.code as string);
+            return await this.bridge.executeScript(args['code'] as string);
           }
           return 'Error: Scripting not supported by current DAW bridge.';
         }
 
         case 'install_producer_toolset': {
-          return await this.scriptManager.installToolset(args.author as string);
+          return await this.scriptManager.installToolset(
+            args['author'] as string,
+          );
         }
 
         case 'get_reaper_status': {
@@ -309,17 +362,5 @@ export class DucerCore {
       config,
       mode === 'advanced' ? 'advanced' : mode === 'lite' ? 'lite' : 'command',
     );
-  }
-
-  private getMimeType(filePath: string): string {
-    const ext = path.extname(filePath).toLowerCase();
-    const map: Record<string, string> = {
-      '.wav': 'audio/wav',
-      '.mp3': 'audio/mp3',
-      '.aiff': 'audio/aiff',
-      '.ogg': 'audio/ogg',
-      '.flac': 'audio/flac',
-    };
-    return map[ext] || 'audio/mpeg';
   }
 }
