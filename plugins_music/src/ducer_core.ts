@@ -19,6 +19,26 @@ import {
 import { CompatibilityShield } from './compatibility_check.js';
 import { ScriptManager } from './script_manager.js';
 
+/**
+ * Retorna el MIME type correcto para la extensión del archivo.
+ * Gemini 1.5 Pro acepta audio/wav, audio/mp3, audio/aiff, audio/ogg, audio/flac.
+ */
+function getAudioMediaType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  const mediaTypeMap: Record<string, string> = {
+    '.wav': 'audio/wav',
+    '.wave': 'audio/wav',
+    '.mp3': 'audio/mp3',
+    '.mp4': 'audio/mp4',
+    '.aiff': 'audio/aiff',
+    '.aif': 'audio/aiff',
+    '.ogg': 'audio/ogg',
+    '.flac': 'audio/flac',
+    '.m4a': 'audio/mp4',
+  };
+  return mediaTypeMap[ext] || 'audio/wav';
+}
+
 export interface DucerConfig {
   getGeminiClient: () => unknown;
   getSessionId: () => string;
@@ -351,16 +371,117 @@ export class DucerCore {
       throw new Error(`Validation Error: ${validation.error}`);
     }
 
-    fs.readFileSync(filePath);
+    // Leer el archivo de audio y convertir a base64
+    const audioBytes = fs.readFileSync(filePath);
+    const audioBase64 = audioBytes.toString('base64');
+    const mediaType = getAudioMediaType(filePath);
+    const fileName = path.basename(filePath);
 
-    const promptContext = `Analyze this audio file (${mode}) technically and artistically.
-    File: ${path.basename(filePath)}`;
-
-    return await this.getInsight(
-      promptContext,
-      '',
-      config,
-      mode === 'advanced' ? 'advanced' : mode === 'lite' ? 'lite' : 'command',
+    console.log(
+      `[Ducer] Audio cargado: ${fileName} (${(audioBytes.length / 1024 / 1024).toFixed(2)} MB, ${mediaType})`,
     );
+
+    const geminiClient = config.getGeminiClient();
+    CompatibilityShield.validateGeminiClient(geminiClient);
+
+    const sessionId = config.getSessionId();
+    const analysisMode =
+      mode === 'advanced' ? 'advanced' : mode === 'lite' ? 'lite' : 'command';
+    const systemPrompt = this.getSystemPrompt(analysisMode);
+    const toolDeclarations = this.toolsManager.getMusicToolsDeclarations();
+
+    const textPrompt = `${systemPrompt}
+
+Analiza este archivo de audio de manera técnica y artística en modo ${mode}.
+Archivo: ${fileName}
+
+Proporciona:
+1. Análisis espectral y de dinámica
+2. Evaluación del balance tonal
+3. Observaciones de la mezcla y producción
+4. Recomendaciones concretas de mejora`;
+
+    // Construir mensaje multimodal: texto + audio como inline_data base64
+    const multimodalMessage = [
+      {
+        inlineData: {
+          mimeType: mediaType,
+          data: audioBase64,
+        },
+      },
+      { text: textPrompt },
+    ];
+
+    let fullResponse = '';
+    let continueLoop = true;
+
+    // Historial para loop multi-turn si hay tool-calls
+    const history: Array<{ role: string; parts: unknown[] }> = [
+      { role: 'user', parts: multimodalMessage },
+    ];
+
+    while (continueLoop) {
+      continueLoop = false;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseStream = (geminiClient as any).sendMessageStream(
+        history[history.length - 1].parts as unknown[],
+        new AbortController().signal,
+        sessionId,
+        toolDeclarations,
+        false,
+        'Ducer Audio Analyzer',
+      );
+
+      const toolCallsThisTurn: Array<{ name: string; args: string }> = [];
+      let assistantTextThisTurn = '';
+
+      for await (const event of responseStream) {
+        if (event.type === 'content') {
+          process.stdout.write(event.value);
+          fullResponse += event.value;
+          assistantTextThisTurn += event.value;
+        }
+        if (event.type === 'tool-call') {
+          toolCallsThisTurn.push(event.value);
+        }
+      }
+
+      if (assistantTextThisTurn) {
+        history.push({
+          role: 'assistant',
+          parts: [{ text: assistantTextThisTurn }],
+        });
+      }
+
+      if (toolCallsThisTurn.length > 0) {
+        continueLoop = true;
+        const toolResultParts: unknown[] = [];
+
+        for (const call of toolCallsThisTurn) {
+          // Inyectar el filePath en los args de las tools que lo necesitan
+          let callArgs: Record<string, unknown> = {};
+          try {
+            callArgs = JSON.parse(call.args);
+          } catch {
+            /* usar vacío */
+          }
+          if (!callArgs['filePath']) callArgs['filePath'] = filePath;
+          const enrichedCall = {
+            name: call.name,
+            args: JSON.stringify(callArgs),
+          };
+
+          const result = await this.dispatchTool(enrichedCall);
+          toolResultParts.push({
+            text: `[TOOL: ${call.name}]\nRESULT: ${result}`,
+          });
+        }
+
+        history.push({ role: 'user', parts: toolResultParts });
+      }
+    }
+
+    return fullResponse;
   }
 }
