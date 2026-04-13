@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ducer — Terminal-First AI Agent for Music Production</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --black: #070708;
+        --surface: #0d0d0f;
+        --card: #111114;
+        --border: #1c1c22;
+        --border2: #2a2a35;
+        --green: #00e676;
+        --green-dim: #00753c;
+        --amber: #ffab00;
+        --amber-dim: #7a5200;
+        --red: #ff3d3d;
+        --text: #d0ccc0;
+        --muted: #565660;
+        --muted2: #3a3a44;
+        --white: #f0ede6;
+        --font-display: 'Bebas Neue', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+        --font-body: 'Courier Prime', monospace;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--black);
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        line-height: 1.7;
+        overflow-x: hidden;
+      }
+
+      /* scanlines overlay */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.04) 2px,
+          rgba(0, 0, 0, 0.04) 4px
+        );
+        pointer-events: none;
+        z-index: 9999;
+      }
+
+      /* ── NAV ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 2.5rem;
+        border-bottom: 1px solid var(--border);
+        background: rgba(7, 7, 8, 0.92);
+        backdrop-filter: blur(12px);
+      }
+
+      .nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        letter-spacing: 0.12em;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+      }
+
+      .nav-logo .ver {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        font-weight: 300;
+        color: var(--green);
+        letter-spacing: 0.05em;
+        padding: 2px 8px;
+        border: 1px solid var(--green-dim);
+        border-radius: 2px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+
+      .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transition: color 0.2s;
+      }
+
+      .nav-links a:hover {
+        color: var(--green);
+      }
+
+      /* ── HERO ── */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 8rem 2.5rem 5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* waveform bg */
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 3rem;
+        pointer-events: none;
+        opacity: 0.07;
+      }
+
+      .waveform {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 280px;
+      }
+
+      .waveform-bar {
+        width: 3px;
+        background: var(--green);
+        border-radius: 1px;
+        animation: wave-pulse var(--dur, 1.2s) ease-in-out infinite alternate;
+        animation-delay: var(--delay, 0s);
+      }
+
+      @keyframes wave-pulse {
+        from {
+          height: var(--min, 4px);
+        }
+        to {
+          height: var(--max, 100px);
+        }
+      }
+
+      .hero-content {
+        max-width: 820px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero-eyebrow {
+        font-size: 0.68rem;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .hero-eyebrow::before {
+        content: '';
+        display: inline-block;
+        width: 24px;
+        height: 1px;
+        background: var(--green);
+      }
+
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(4rem, 10vw, 8.5rem);
+        line-height: 0.92;
+        letter-spacing: 0.04em;
+        color: var(--white);
+        margin-bottom: 2rem;
+      }
+
+      h1 .accent {
+        color: var(--green);
+      }
+
+      .hero-sub {
+        font-family: var(--font-body);
+        font-size: 1.1rem;
+        color: var(--muted);
+        max-width: 560px;
+        margin-bottom: 3rem;
+        line-height: 1.75;
+        border-left: 2px solid var(--border2);
+        padding-left: 1.2rem;
+      }
+
+      .hero-sub strong {
+        color: var(--text);
+        font-style: italic;
+      }
+
+      /* terminal install block */
+      .install-block {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .install-label {
+        font-size: 0.6rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .install-cmd {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        background: var(--card);
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+
+      .install-cmd:hover {
+        border-color: var(--green-dim);
+      }
+
+      .install-cmd .prompt {
+        color: var(--green);
+        user-select: none;
+      }
+      .install-cmd .cmd-text {
+        color: var(--white);
+        letter-spacing: 0.02em;
+      }
+      .install-cmd .copy-icon {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border: 1px solid var(--border2);
+        border-radius: 2px;
+        transition: all 0.2s;
+        user-select: none;
+      }
+      .install-cmd:hover .copy-icon {
+        color: var(--green);
+        border-color: var(--green-dim);
+      }
+      .install-cmd .copy-icon.copied {
+        color: var(--green);
+        content: 'OK';
+      }
+
+      .hero-cta {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .btn {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-decoration: none;
+        padding: 0.65rem 1.4rem;
+        border-radius: 2px;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background: var(--green);
+        color: #000;
+        border-color: var(--green);
+      }
+      .btn-primary:hover {
+        background: #00ff8a;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--muted);
+        border-color: var(--border2);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+        border-color: var(--muted2);
+      }
+
+      /* cursor blink */
+      .cursor {
+        display: inline-block;
+        width: 10px;
+        height: 1.1em;
+        background: var(--green);
+        vertical-align: text-bottom;
+        margin-left: 2px;
+        animation: blink 1s step-end infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* ── VU METERS strip ── */
+      .vu-strip {
+        display: flex;
+        gap: 3px;
+        align-items: flex-end;
+        height: 48px;
+        margin: 4rem 2.5rem 0;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0;
+        overflow: hidden;
+      }
+
+      .vu-segment {
+        flex: 1;
+        max-width: 8px;
+        border-radius: 1px 1px 0 0;
+        animation: vu-anim var(--dur, 0.8s) ease-in-out infinite alternate;
+        animation-delay: var(--d, 0s);
+      }
+
+      @keyframes vu-anim {
+        from {
+          height: var(--lo, 4px);
+          opacity: 0.5;
+        }
+        to {
+          height: var(--hi, 40px);
+          opacity: 1;
+        }
+      }
+
+      /* ── SECTION LAYOUT ── */
+      section {
+        padding: 6rem 2.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .section-label {
+        font-size: 0.62rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .section-label::before {
+        content: '//';
+        color: var(--muted2);
+      }
+
+      h2 {
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        letter-spacing: 0.04em;
+        color: var(--white);
+        margin-bottom: 1.5rem;
+        line-height: 1;
+      }
+
+      .section-intro {
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        color: var(--muted);
+        max-width: 600px;
+        margin-bottom: 3.5rem;
+      }
+
+      /* ── ARCH DIAGRAM ── */
+      .arch-block {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .arch-topbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot-r {
+        background: #ff5f57;
+      }
+      .dot-y {
+        background: #febc2e;
+      }
+      .dot-g {
+        background: #28c840;
+      }
+
+      .arch-title {
+        font-size: 0.65rem;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-left: 0.5rem;
+      }
+
+      .arch-pre {
+        padding: 2rem;
+        font-size: 0.8rem;
+        color: #7a94a0;
+        line-height: 1.7;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .arch-pre .hl-green {
+        color: var(--green);
+      }
+      .arch-pre .hl-amber {
+        color: var(--amber);
+      }
+      .arch-pre .hl-blue {
+        color: #7eb8d4;
+      }
+      .arch-pre .hl-white {
+        color: var(--white);
+      }
+      .arch-pre .hl-muted {
+        color: var(--muted2);
+      }
+
+      /* ── FEATURE CARDS ── */
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 5rem;
+      }
+
+      .feat-card {
+        background: var(--card);
+        padding: 2rem;
+        transition: background 0.2s;
+      }
+
+      .feat-card:hover {
+        background: #151519;
+      }
+
+      .feat-icon {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        display: block;
+        line-height: 1;
+      }
+
+      .feat-title {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        letter-spacing: 0.06em;
+        color: var(--white);
+        margin-bottom: 0.6rem;
+      }
+
+      .feat-desc {
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .feat-tag {
+        display: inline-block;
+        margin-top: 1.2rem;
+        font-size: 0.6rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--green);
+        background: rgba(0, 230, 118, 0.06);
+        border: 1px solid rgba(0, 230, 118, 0.15);
+        padding: 3px 10px;
+        border-radius: 2px;
+      }
+
+      .feat-tag.amber {
+        color: var(--amber);
+        background: rgba(255, 171, 0, 0.06);
+        border-color: rgba(255, 171, 0, 0.15);
+      }
+
+      /* ── USAGE TERMINAL ── */
+      .terminal-block {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+      }
+
+      .terminal-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.65rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .terminal-title {
+        font-size: 0.62rem;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+        margin-left: 0.5rem;
+      }
+
+      .terminal-body {
+        padding: 1.5rem 1.8rem;
+        font-size: 0.82rem;
+        line-height: 2;
+        overflow-x: auto;
+      }
+
+      .t-prompt {
+        color: var(--green);
+      }
+      .t-cmd {
+        color: var(--white);
+      }
+      .t-flag {
+        color: var(--amber);
+      }
+      .t-val {
+        color: #7eb8d4;
+      }
+      .t-out {
+        color: var(--muted);
+        display: block;
+        padding-left: 0.5rem;
+      }
+      .t-out.success {
+        color: #4caf90;
+      }
+      .t-out.info {
+        color: #7eb8d4;
+      }
+      .t-out.warn {
+        color: var(--amber);
+      }
+      .t-line {
+        display: block;
+      }
+      .t-empty {
+        display: block;
+        height: 0.5rem;
+      }
+
+      /* ── TRANSPORT BAR (two-tier) ── */
+      .transport-diagram {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 3rem;
+      }
+
+      .transport-panel {
+        background: var(--card);
+        padding: 1.8rem;
+      }
+
+      .transport-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+      }
+
+      .transport-label {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        letter-spacing: 0.06em;
+        color: var(--white);
+        margin-bottom: 0.8rem;
+      }
+
+      .transport-desc {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .transport-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.6rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-top: 1rem;
+      }
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        animation: status-pulse 1.5s ease-in-out infinite;
+      }
+
+      .status-dot.active {
+        background: var(--green);
+      }
+      .status-dot.fallback {
+        background: var(--amber);
+      }
+
+      @keyframes status-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ── ROADMAP ── */
+      .roadmap-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .roadmap-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+        transition: background 0.15s;
+      }
+
+      .roadmap-item:last-child {
+        border-bottom: none;
+      }
+      .roadmap-item:hover {
+        background: #131316;
+      }
+
+      .roadmap-check {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 2px;
+        border: 1px solid var(--border2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+        font-size: 10px;
+        color: var(--green);
+      }
+
+      .roadmap-check.done {
+        background: rgba(0, 230, 118, 0.08);
+        border-color: var(--green-dim);
+        color: var(--green);
+      }
+
+      .roadmap-text {
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        color: var(--muted);
+        flex: 1;
+      }
+
+      .roadmap-text.done {
+        color: var(--text);
+      }
+
+      .roadmap-phase {
+        font-size: 0.6rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 2px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .phase-done {
+        color: var(--green);
+        background: rgba(0, 230, 118, 0.06);
+        border: 1px solid rgba(0, 230, 118, 0.12);
+      }
+      .phase-next {
+        color: var(--amber);
+        background: rgba(255, 171, 0, 0.06);
+        border: 1px solid rgba(255, 171, 0, 0.12);
+      }
+      .phase-later {
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid var(--border);
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        padding: 3rem 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+
+      .footer-brand {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        letter-spacing: 0.1em;
+        color: var(--white);
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .footer-tagline {
+        font-family: var(--font-body);
+        font-style: italic;
+        font-size: 0.8rem;
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 1.5rem;
+        list-style: none;
+      }
+
+      .footer-links a {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .footer-links a:hover {
+        color: var(--green);
+      }
+
+      .footer-meta {
+        font-size: 0.68rem;
+        color: var(--muted2);
+        letter-spacing: 0.06em;
+      }
+
+      /* ── DIVIDER ── */
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--border2),
+          transparent
+        );
+        margin: 0 2.5rem;
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 700px) {
+        nav {
+          padding: 0.8rem 1.2rem;
+        }
+        .nav-links {
+          display: none;
+        }
+        .hero {
+          padding: 7rem 1.2rem 3rem;
+        }
+        section {
+          padding: 4rem 1.2rem;
+        }
+        .transport-diagram {
+          grid-template-columns: 1fr;
+        }
+        footer {
+          padding: 2rem 1.2rem;
+          flex-direction: column;
+        }
+        .vu-strip {
+          margin: 3rem 1.2rem 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <div class="nav-logo">
+        DUCER
+        <span class="ver">v0.41.0</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li>
+          <a href="https://github.com/julesklord/ducer-cli/tree/ducer"
+            >GitHub ↗</a
+          >
+        </li>
+      </ul>
+    </nav>
+
+    <!-- HERO -->
+    <div class="hero">
+      <!-- waveform bg -->
+      <div class="hero-bg">
+        <div class="waveform" id="waveform-bg"></div>
+      </div>
+
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          Terminal-First AI Agent · DAW Orchestration
+        </div>
+
+        <h1>
+          NOT A<br />
+          <span class="accent">WRAPPER</span><br />
+          A WEAPON
+        </h1>
+
+        <p class="hero-sub">
+          <strong>Ducer</strong> is what happens when a producer who actually
+          engineers audio decides to build the tool they needed to exist. Hard
+          fork of Gemini CLI — extended with a native production layer that
+          speaks REAPER's language natively and validates every action ID before
+          it touches your session.
+        </p>
+
+        <div class="install-block">
+          <div class="install-label">Quick start</div>
+          <div class="install-cmd" onclick="copyInstall(this)">
+            <span class="prompt">$</span>
+            <span class="cmd-text"
+              >git clone -b ducer https://github.com/julesklord/ducer-cli.git &&
+              npm install && npm link</span
+            >
+            <span class="copy-icon" id="copy-icon">COPY</span>
+          </div>
+        </div>
+
+        <div class="hero-cta">
+          <a
+            href="https://github.com/julesklord/ducer-cli/tree/ducer"
+            class="btn btn-primary"
+          >
+            View on GitHub
+          </a>
+          <a href="#architecture" class="btn btn-ghost">
+            Explore Architecture
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- VU METERS -->
+    <div class="vu-strip" id="vu-strip"></div>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <div class="section-label">System Design</div>
+      <h2>HOW IT<br />WORKS</h2>
+      <p class="section-intro">
+        A passive Jump Hook intercepts music subcommands and delegates them to
+        the plugin layer — no upstream code modified. Git merges stay clean.
+      </p>
+
+      <div class="arch-block">
+        <div class="arch-topbar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="arch-title">ducer — system topology</span>
+        </div>
+        <div class="arch-pre">
+          <span class="hl-white">User Prompt</span>
+          │ ▼
+          <span class="hl-white">Gemini CLI Host</span> ────
+          <span class="hl-amber">Jump Hook</span> ────►
+          <span class="hl-green">Ducer Plugin Layer</span>
+          │ ┌───────────────────┼───────────────────┐ │ │ │
+          <span class="hl-green">DucerCore</span>
+          <span class="hl-blue">Sensory Tools</span>
+          <span class="hl-amber">DawBridge</span>
+          <span class="hl-muted">(Orchestrator)</span>
+          <span class="hl-muted">(Audio/Media)</span>
+          <span class="hl-muted">(I/O Layer)</span>
+          │ │ │
+          <span class="hl-muted">Local DB</span>
+          <span class="hl-muted">AudioAnalyzer</span>
+          <span class="hl-amber">ReaperBridgeClient</span>
+          <span class="hl-muted">(Action Registry)</span>
+          <span class="hl-muted">(Waveform/Spec)</span>
+          <span class="hl-muted">(Web API + File IPC)</span>
+        </div>
+      </div>
+
+      <!-- Two-Tier Transport -->
+      <div class="transport-diagram" style="margin-top: 1.5rem">
+        <div class="transport-panel">
+          <div class="transport-title">Tier 1</div>
+          <div class="transport-label">WEB CONTROL API</div>
+          <p class="transport-desc">
+            Hits REAPER's native HTTP endpoint directly for action execution and
+            status. 1-second timeout, fails fast. No file I/O overhead.
+          </p>
+          <div class="transport-status">
+            <div class="status-dot active"></div>
+            <span style="color: var(--green)">Fast path · 127.0.0.1:8080</span>
+          </div>
+        </div>
+        <div
+          class="transport-panel"
+          style="border-left: 1px solid var(--border)"
+        >
+          <div class="transport-title">Tier 2</div>
+          <div class="transport-label">FILE IPC FALLBACK</div>
+          <p class="transport-desc">
+            Writes commands to
+            <code style="color: var(--amber); font-size: 0.78rem"
+              >ducer_commands.txt</code
+            >, polls
+            <code style="color: var(--amber); font-size: 0.78rem"
+              >ducer_response.txt</code
+            >. 100ms polling, 5-second timeout.
+          </p>
+          <div class="transport-status">
+            <div class="status-dot fallback"></div>
+            <span style="color: var(--amber)"
+              >Fallback · APPDATA/REAPER/Scripts</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <div class="section-label">Capabilities</div>
+      <h2>PRODUCER<br />INTELLIGENCE</h2>
+      <p class="section-intro">
+        Every feature built around one principle: verify before executing, never
+        hallucinate action IDs into a live session.
+      </p>
+
+      <div class="features-grid">
+        <div class="feat-card">
+          <span class="feat-icon">⬡</span>
+          <div class="feat-title">DAW BRIDGE</div>
+          <p class="feat-desc">
+            Universal abstraction for DAW orchestration. Implements five
+            methods. Adding a new DAW — Ableton, Logic, anything — means
+            implementing the interface. DucerCore never knows what's behind it.
+          </p>
+          <span class="feat-tag">DawBridge Interface</span>
+        </div>
+
+        <div class="feat-card">
+          <span class="feat-icon">◈</span>
+          <div class="feat-title">ANTI-HALLUCINATION</div>
+          <p class="feat-desc">
+            Every action ID is validated via
+            <code style="color: var(--green); font-size: 0.8rem"
+              >ReverseNamedCommandLookup</code
+            >
+            before touching REAPER. Hallucinated IDs trigger a semantic search
+            against the local action registry. No ghost actions in your session.
+          </p>
+          <span class="feat-tag amber">Anti-Hallucination Loop</span>
+        </div>
+
+        <div class="feat-card">
+          <span class="feat-icon">◎</span>
+          <div class="feat-title">AUDIO ANALYSIS</div>
+          <p class="feat-desc">
+            Waveform visualization, spectral analysis, and vocal transcription
+            via Gemini's multimodal 1M-token context. Standard, Advanced (HTML
+            report), and Lite modes. The analysis hits the bytes directly — not
+            just the filename.
+          </p>
+          <span class="feat-tag">Multimodal Engine</span>
+        </div>
+
+        <div class="feat-card">
+          <span class="feat-icon">▶</span>
+          <div class="feat-title">SERVICE MODE</div>
+          <p class="feat-desc">
+            Persistent IPC loop that watches the command file every 200ms. A Lua
+            script in REAPER writes a command — Ducer processes it via the LLM —
+            writes the response back. Full bidirectional DAW↔LLM communication
+            without leaving your session.
+          </p>
+          <span class="feat-tag">Persistent IPC</span>
+        </div>
+
+        <div class="feat-card">
+          <span class="feat-icon">◇</span>
+          <div class="feat-title">LUA EXECUTION</div>
+          <p class="feat-desc">
+            The model generates and runs Lua scripts on demand. Complex routing
+            (stem bussing, FX chains, automation) gets handled as dynamic code,
+            not hardcoded actions. 300+ specialized Ducer scripts included.
+          </p>
+          <span class="feat-tag">Dynamic Code Gen</span>
+        </div>
+
+        <div class="feat-card">
+          <span class="feat-icon">☰</span>
+          <div class="feat-title">MACRO LEARNING</div>
+          <p class="feat-desc">
+            Teach Ducer your custom workflow macros and name-to-ID mappings with
+            <code style="color: var(--green); font-size: 0.8rem"
+              >learn_workflow_macro</code
+            >. Stored in a local JSON registry. No round-trip to the API for
+            actions you use daily.
+          </p>
+          <span class="feat-tag amber">Local Registry</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- USAGE -->
+    <section id="usage">
+      <div class="section-label">Usage</div>
+      <h2>COMMANDS</h2>
+      <p class="section-intro">Three modes. Natural language throughout.</p>
+
+      <!-- analyze -->
+      <div class="terminal-block">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="terminal-title">ducer analyze — advanced mode</span>
+        </div>
+        <div class="terminal-body">
+          <span class="t-line"
+            ><span class="t-prompt">$ </span
+            ><span class="t-cmd">ducer analyze</span>
+            <span class="t-flag">--file</span>
+            <span class="t-val">"./stems/kick_bus.wav"</span>
+            <span class="t-flag">--advanced</span></span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out info"
+            >[Ducer] Audio cargado: kick_bus.wav (2.14 MB, audio/wav)</span
+          >
+          <span class="t-out info"
+            >[Ducer] Modo: advanced · Enviando a Gemini 1.5 Pro...</span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out">Análisis Espectral:</span>
+          <span class="t-out">
+            → Pico fundamental: 60Hz con armónico secundario notable en
+            120Hz</span
+          >
+          <span class="t-out">
+            → Rango 200-400Hz: ligeramente congestionado, considerar 2-3dB cut
+            en 280Hz</span
+          >
+          <span class="t-out">
+            → Transiente: ataque en 8ms, sustain aceptable, decay limpio</span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out success"
+            >✅ Reporte HTML generado →
+            reports/Ducer_Report_kick_bus_1775850219850.html</span
+          >
+        </div>
+      </div>
+
+      <!-- do -->
+      <div class="terminal-block">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="terminal-title"
+            >ducer do — natural language DAW control</span
+          >
+        </div>
+        <div class="terminal-body">
+          <span class="t-line"
+            ><span class="t-prompt">$ </span><span class="t-cmd">ducer do</span>
+            <span class="t-flag">--query</span>
+            <span class="t-val"
+              >"sidechain route Track 1 to Track 2, add compressor"</span
+            ></span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out info"
+            >[Ducer] DAW Control Mode active → REAPER 7.x @ 127.0.0.1:8080</span
+          >
+          <span class="t-out info"
+            >[Ducer] Ejecutando tool: execute_reaper_action</span
+          >
+          <span class="t-out">
+            → Validando action ID... ✓ (Transport: confirmed)</span
+          >
+          <span class="t-out"> → Generando Lua: sidechain_route.lua</span>
+          <span class="t-out"> → Ejecutando en REAPER... OK (Web API)</span>
+          <span class="t-empty"></span>
+          <span class="t-out success"
+            >Sidechain routing configurado. Track 1 → Track 2 con compressor en
+            pre-fader.</span
+          >
+        </div>
+      </div>
+
+      <!-- service -->
+      <div class="terminal-block">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="terminal-title"
+            >ducer service — persistent IPC loop</span
+          >
+        </div>
+        <div class="terminal-body">
+          <span class="t-line"
+            ><span class="t-prompt">$ </span
+            ><span class="t-cmd">ducer service</span></span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out info"
+            >[Ducer] Service Mode Active. Listening for REAPER commands...</span
+          >
+          <span class="t-out info"
+            >[Ducer] Watching: %APPDATA%\REAPER\Scripts\ducer_commands.txt</span
+          >
+          <span class="t-out muted" style="color: var(--muted2)"
+            >↳ Trigger from REAPER Lua: reaper.WriteFile("ducer_commands.txt",
+            query)</span
+          >
+          <span class="t-empty"></span>
+          <span class="t-out warn"
+            >[Ducer Service] Incoming: "analyze current track and suggest EQ
+            settings"</span
+          >
+          <span class="t-out success"
+            >→ Response written to ducer_response.txt
+            <span class="cursor"></span
+          ></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ROADMAP -->
+    <section id="roadmap">
+      <div class="section-label">Roadmap</div>
+      <h2>WHERE<br />IT'S GOING</h2>
+      <p class="section-intro">
+        Active development on the
+        <code style="color: var(--green)">ducer</code> branch. Upstream merges
+        tracked on <code style="color: var(--muted)">main</code>.
+      </p>
+
+      <div class="roadmap-list">
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">
+            DawBridge interface + REAPER implementation
+          </div>
+          <div class="roadmap-phase phase-done">Phase 1</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">
+            Web Control API + File IPC dual transport
+          </div>
+          <div class="roadmap-phase phase-done">Phase 1</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">
+            Anti-Hallucination loop via action registry
+          </div>
+          <div class="roadmap-phase phase-done">Phase 2</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">
+            Audio analysis — standard / advanced / lite modes
+          </div>
+          <div class="roadmap-phase phase-done">Phase 2</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">HTML premium report generation</div>
+          <div class="roadmap-phase phase-done">Phase 2</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check done">✓</div>
+          <div class="roadmap-text done">
+            Service mode (persistent IPC loop)
+          </div>
+          <div class="roadmap-phase phase-done">Phase 2</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">
+            Atomic file IPC (rename-based, eliminates race condition)
+          </div>
+          <div class="roadmap-phase phase-next">Next</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">
+            EEL2 / Python script support in executeScript()
+          </div>
+          <div class="roadmap-phase phase-next">Next</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">
+            Whisper local transcription integration
+          </div>
+          <div class="roadmap-phase phase-next">Next</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">Ableton Live bridge</div>
+          <div class="roadmap-phase phase-later">Phase 4</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">Logic Pro bridge (macOS)</div>
+          <div class="roadmap-phase phase-later">Phase 4</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-check"></div>
+          <div class="roadmap-text">
+            VST/CLAP plugin wrapper — Ducer as bridge host inside the DAW
+          </div>
+          <div class="roadmap-phase phase-later">Phase 4</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-brand">
+        DUCER
+        <span class="footer-tagline">Built for producers, by a producer.</span>
+      </div>
+
+      <ul class="footer-links">
+        <li>
+          <a href="https://github.com/julesklord/ducer-cli/tree/ducer"
+            >GitHub</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/julesklord/ducer-cli/blob/ducer/plugins_music/README.md"
+            >API Reference</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/julesklord/ducer-cli/blob/ducer/FUTURE_FEATURES.md"
+            >Roadmap</a
+          >
+        </li>
+      </ul>
+
+      <div class="footer-meta">
+        Apache-2.0 · ducer branch · Fearless Media Group
+      </div>
+    </footer>
+
+    <script>
+      /* ── Waveform background ── */
+      const wfEl = document.getElementById('waveform-bg');
+      const bars = 60;
+      for (let i = 0; i < bars; i++) {
+        const b = document.createElement('div');
+        b.className = 'waveform-bar';
+        const min = Math.floor(Math.random() * 12 + 4);
+        const max = Math.floor(Math.random() * 220 + 30);
+        const dur = (Math.random() * 1.5 + 0.6).toFixed(2);
+        const delay = (Math.random() * 2).toFixed(2);
+        b.style.cssText = `--min:${min}px;--max:${max}px;--dur:${dur}s;--delay:${delay}s;height:${min}px`;
+        wfEl.appendChild(b);
+      }
+
+      /* ── VU Meters strip ── */
+      const vuEl = document.getElementById('vu-strip');
+      const vuColors = [
+        '#00e676',
+        '#00e676',
+        '#00e676',
+        '#00e676',
+        '#ffab00',
+        '#ffab00',
+        '#ff3d3d',
+      ];
+      const vuCount = Math.floor(window.innerWidth / 11);
+      for (let i = 0; i < vuCount; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'vu-segment';
+        const lo = Math.floor(Math.random() * 6 + 2);
+        const hi = Math.floor(Math.random() * 44 + 4);
+        const dur = (Math.random() * 0.8 + 0.4).toFixed(2);
+        const d = (Math.random() * 1.5).toFixed(2);
+        const color = vuColors[Math.floor((i / vuCount) * vuColors.length)];
+        seg.style.cssText = `--lo:${lo}px;--hi:${hi}px;--dur:${dur}s;--d:${d}s;background:${color};height:${lo}px`;
+        vuEl.appendChild(seg);
+      }
+
+      /* ── Copy install command ── */
+      function copyInstall(el) {
+        const text = el.querySelector('.cmd-text').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const icon = el.querySelector('.copy-icon');
+          const orig = icon.textContent;
+          icon.textContent = 'COPIED';
+          icon.style.color = 'var(--green)';
+          icon.style.borderColor = 'var(--green-dim)';
+          setTimeout(() => {
+            icon.textContent = orig;
+            icon.style.color = '';
+            icon.style.borderColor = '';
+          }, 1800);
+        });
+      }
+    </script>
+  </body>
+</html>
