@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 import { DucerCore } from './ducer_core.js';
 import { ReaperBridgeClient } from './reaper_bridge_client.js';
 import { generatePremiumHTML } from './ui_generator.js';
-import { REAPER_CONTROL_PROMPT } from './prompts.js';
+import { DAW_CONTROL_PROMPT } from './prompts.js';
 
 interface DucerArgs {
   subcommand?: string;
@@ -64,7 +64,7 @@ export async function handleDucerCommand(
     }
   } else if (subcommand === 'do' || !subcommand || subcommand === 'service') {
     // prepare context
-    const context = REAPER_CONTROL_PROMPT;
+    const context = DAW_CONTROL_PROMPT;
 
     if (subcommand === 'do' && argv.query) {
       await ducer.getInsight(argv.query, context, config);
@@ -175,10 +175,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 export const ducerCommand = {
   command: 'ducer <subcommand>',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: {
-    positional: (name: string, opt: object) => unknown;
-    option: (name: string, opt: object) => unknown;
-  }) => {
+  builder: (yargs: any) => {
     return yargs
       .positional('subcommand', {
         type: 'string',
@@ -201,6 +198,11 @@ export const ducerCommand = {
         type: 'boolean',
         describe: 'Generar resumen técnico conciso',
         default: false,
+      })
+      .option('query', {
+        alias: 'q',
+        type: 'string',
+        describe: 'Consulta en lenguaje natural para el modo do',
       });
   },
   handler: async () => {}, // Handled by the dispatcher
