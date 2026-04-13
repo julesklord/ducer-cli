@@ -15,7 +15,7 @@ assistant.
 - [x] **Unified Persona**: Ensure all model responses refer to the entity as
       "Ducer".
 - [x] **Professional Identity**: High-impact README and AI-generated branding.
-- [ ] **Custom Splash Screen**: Replace generic startup with a professional
+- [x] **Custom Splash Screen**: Replace generic startup with a professional
       ASCII DAW interface.
 
 ## Phase 2: REAPER Deep Integration (Current) - **STABLE**
