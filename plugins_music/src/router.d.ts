@@ -22,10 +22,7 @@ export declare function handleDucerCommand(argv: DucerArgs, config: {
 export declare const ducerCommand: {
     command: string;
     describe: string;
-    builder: (yargs: {
-        positional: (name: string, opt: object) => unknown;
-        option: (name: string, opt: object) => unknown;
-    }) => any;
+    builder: (yargs: any) => any;
     handler: () => Promise<void>;
 };
 export {};

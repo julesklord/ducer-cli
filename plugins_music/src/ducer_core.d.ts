@@ -17,6 +17,7 @@ export declare class DucerCore {
     private audioAnalyzer;
     private toolsManager;
     private bridge;
+    private scriptManager;
     private readonly actionsDbPath;
     constructor(bridge: DawBridge);
     /**

@@ -6,7 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+
 
 /**
  * ScriptManager: Handles on-demand fetching and installation of 
@@ -14,14 +14,10 @@ import { execSync } from 'node:child_process';
  */
 export class ScriptManager {
   private readonly scriptsDir: string;
-  private readonly registryUrl: string;
 
   constructor(baseDir: string = process.cwd()) {
     this.scriptsDir = path.join(baseDir, 'scripts', 'lua');
-    // TODO: This is a placeholder URL. The registry is not yet implemented.
-    // When ready, update this to the actual community scripts repository.
-    // For now, installToolset creates local directories only.
-    this.registryUrl = 'https://github.com/julesklord/ducer-community-scripts';
+    // TODO: When registry is ready, implement actual fetching logic.
   }
 
   /**

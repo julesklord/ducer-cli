@@ -38,6 +38,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required?: undefined;
@@ -61,6 +62,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required?: undefined;
@@ -87,6 +89,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required: string[];
@@ -110,6 +113,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required: string[];
@@ -136,6 +140,7 @@ export declare class MusicToolsManager {
                 key?: undefined;
                 query?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required: string[];
@@ -156,6 +161,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required?: undefined;
@@ -179,6 +185,7 @@ export declare class MusicToolsManager {
                 query?: undefined;
                 name?: undefined;
                 code?: undefined;
+                author?: undefined;
                 full_scan?: undefined;
             };
             required: string[];
@@ -202,6 +209,31 @@ export declare class MusicToolsManager {
                 query?: undefined;
                 name?: undefined;
                 action_id?: undefined;
+                author?: undefined;
+                full_scan?: undefined;
+            };
+            required: string[];
+        };
+    } | {
+        name: string;
+        description: string;
+        parameters: {
+            type: string;
+            properties: {
+                author: {
+                    type: string;
+                    description: string;
+                };
+                viz?: undefined;
+                start?: undefined;
+                duration?: undefined;
+                style?: undefined;
+                focus?: undefined;
+                key?: undefined;
+                query?: undefined;
+                name?: undefined;
+                action_id?: undefined;
+                code?: undefined;
                 full_scan?: undefined;
             };
             required: string[];
@@ -226,6 +258,7 @@ export declare class MusicToolsManager {
                 name?: undefined;
                 action_id?: undefined;
                 code?: undefined;
+                author?: undefined;
             };
             required?: undefined;
         };

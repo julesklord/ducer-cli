@@ -62,12 +62,18 @@ export const ALL_ITEMS = [
     header: 'tokens',
     description: 'Total tokens used in the session (not shown when zero)',
   },
+  {
+    id: 'daw-status',
+    header: 'DAW',
+    description: 'REAPER/DAW connection and project status',
+  },
 ] as const;
 
 export type FooterItemId = (typeof ALL_ITEMS)[number]['id'];
 
 export const DEFAULT_ORDER = [
   'workspace',
+  'daw-status',
   'git-branch',
   'sandbox',
   'model-name',
