@@ -291,6 +291,23 @@ export const Footer: React.FC = () => {
         );
         break;
       }
+      case 'daw-status': {
+        const ducer = uiState.ducerStatus;
+        if (!ducer?.isConnected) break;
+        const str = `ON | ${ducer.bpm} BPM`;
+        addCol(
+          id,
+          header,
+          () => (
+            <Text>
+              <Text color={theme.status.success}>● </Text>
+              <Text color={itemColor}>{str}</Text>
+            </Text>
+          ),
+          str.length + 2,
+        );
+        break;
+      }
       case 'git-branch': {
         if (branchName) {
           addCol(

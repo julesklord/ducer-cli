@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
@@ -218,6 +218,12 @@ export interface UIState {
   showIsExpandableHint: boolean;
   hintMode: boolean;
   hintBuffer: string;
+  ducerStatus: {
+    isConnected: boolean;
+    bpm?: number;
+    project?: string;
+    mode?: 'STUDIO' | 'LIVE' | 'STANDBY';
+  };
   transientMessage: {
     text: string;
     type: TransientMessageType;

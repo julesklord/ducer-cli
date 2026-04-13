@@ -10,6 +10,7 @@ import { useUIState } from '../contexts/UIStateContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 import { useAppContext } from '../contexts/AppContext.js';
 import { AppHeader } from './AppHeader.js';
+import { DucerSplash } from './DucerSplash.js';
 
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 import { useConfig } from '../contexts/ConfigContext.js';
@@ -337,7 +338,7 @@ export const MainContent = () => {
   ]);
 
   if (!uiState.isConfigInitialized) {
-    return null;
+    return <DucerSplash version={version} />;
   }
 
   if (isAlternateBufferOrTerminalBuffer) {

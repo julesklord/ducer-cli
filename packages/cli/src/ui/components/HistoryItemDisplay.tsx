@@ -36,6 +36,7 @@ import { ChatList } from './views/ChatList.js';
 import { ModelMessage } from './messages/ModelMessage.js';
 import { ThinkingMessage } from './messages/ThinkingMessage.js';
 import { HintMessage } from './messages/HintMessage.js';
+import { AudioAnalysisMessage } from './messages/AudioAnalysisMessage.js';
 import { getInlineThinkingMode } from '../utils/inlineThinkingMode.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 
@@ -244,6 +245,15 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
       )}
       {itemForDisplay.type === 'chat_list' && (
         <ChatList chats={itemForDisplay.chats} />
+      )}
+      {itemForDisplay.type === 'audio_analysis' && (
+        <AudioAnalysisMessage
+          filename={itemForDisplay.filename}
+          waveform={itemForDisplay.waveform}
+          bpm={itemForDisplay.bpm}
+          key={itemForDisplay.key}
+          summary={itemForDisplay.summary}
+        />
       )}
     </Box>
   );

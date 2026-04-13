@@ -2525,6 +2525,12 @@ Logging in with Google... Restarting Gemini CLI to continue.
       hintMode:
         config.isModelSteeringEnabled() && isToolExecuting(pendingHistoryItems),
       hintBuffer: '',
+      ducerStatus: {
+        isConnected: true,
+        mode: 'STUDIO',
+        project: 'Ducer Project 1',
+        bpm: 120,
+      },
     }),
     [
       isThemeDialogOpen,

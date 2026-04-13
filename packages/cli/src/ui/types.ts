@@ -288,6 +288,15 @@ export type HistoryItemHint = HistoryItemBase & {
   text: string;
 };
 
+export type HistoryItemAudioAnalysis = HistoryItemBase & {
+  type: 'audio_analysis';
+  filename: string;
+  waveform?: number[];
+  bpm?: number;
+  key?: string;
+  summary: string;
+};
+
 export type HistoryItemChatList = HistoryItemBase & {
   type: 'chat_list';
   chats: ChatDetail[];
@@ -405,6 +414,7 @@ export type HistoryItemWithoutId =
   | HistoryItemChatList
   | HistoryItemThinking
   | HistoryItemHint
+  | HistoryItemAudioAnalysis
   | HistoryItemSubagent;
 
 export type HistoryItem = HistoryItemWithoutId & { id: number };
@@ -430,6 +440,7 @@ export enum MessageType {
   MCP_STATUS = 'mcp_status',
   CHAT_LIST = 'chat_list',
   HINT = 'hint',
+  AUDIO_ANALYSIS = 'audio_analysis',
 }
 
 // Simplified message structure for internal feedback
