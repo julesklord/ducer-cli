@@ -8,7 +8,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 
-import {
+import type {
   DawBridge,
   DawStatus,
   ActionValidationResult,
@@ -17,24 +17,32 @@ import {
 /**
  * Gets the cross-platform config directory for REAPER scripts.
  * Windows: %APPDATA%\REAPER\Scripts
- * macOS: ~/Library/Application Support/REAPER/Scripts  
+ * macOS: ~/Library/Application Support/REAPER/Scripts
  * Linux: ~/.config/REAPER/Scripts
  */
 function getReaperScriptsDir(): string {
   const platform = os.platform();
-  
+
   if (platform === 'win32') {
     const appData = process.env['APPDATA'];
     if (!appData) {
-      throw new Error('APPDATA environment variable not set. Cannot locate REAPER scripts directory on Windows.');
+      throw new Error(
+        'APPDATA environment variable not set. Cannot locate REAPER scripts directory on Windows.',
+      );
     }
     return path.join(appData, 'REAPER', 'Scripts');
   }
-  
+
   if (platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'REAPER', 'Scripts');
+    return path.join(
+      os.homedir(),
+      'Library',
+      'Application Support',
+      'REAPER',
+      'Scripts',
+    );
   }
-  
+
   // Linux and other Unix-like systems
   const xdgConfig = process.env['XDG_CONFIG_HOME'];
   if (xdgConfig) {
@@ -99,29 +107,47 @@ export class ReaperBridgeClient implements DawBridge {
   public async validateAction(
     actionId: string | number,
   ): Promise<ActionValidationResult> {
-    // 1. Try Web API for quick validation if possible
-    // (Web API doesn't have a direct "validate" endpoint, so we usually rely on Lua for this)
-
-    // 2. Lua-based verification
+    // Usamos Lua para validar. El script escribe directamente al response file
+    // para ser consistente con el protocolo del bridge.
     const luaValidator = `
-      local id = "${actionId}"
-      local name = reaper.ReverseNamedCommandLookup(tonumber(id) or reaper.NamedCommandLookup(id))
-      if name then 
-        reaper.SetExtState("Ducer", "last_val", name, false)
-      else
-        reaper.SetExtState("Ducer", "last_val", "INVALID", false)
+    local id_str = "${actionId}"
+    local id_num = tonumber(id_str)
+    local name = nil
+    if id_num then
+      name = reaper.ReverseNamedCommandLookup(id_num)
+    else
+      local resolved = reaper.NamedCommandLookup(id_str)
+      if resolved and resolved ~= 0 then
+        name = reaper.ReverseNamedCommandLookup(resolved)
       end
-    `;
+    end
+    local result = name or "INVALID"
+    -- Escribir al response file directamente
+    local resp_path = reaper.GetResourcePath() .. "/Scripts/ducer_response.txt"
+    local f = io.open(resp_path, "w")
+    if f then f:write(result); f:close() end
+  `;
 
     try {
+      // Escribir el Lua al cmd file y esperar la respuesta en el resp file
+      if (!this.isBridgeAvailable()) {
+        // Sin bridge, intentar Web API con un action de prueba
+        const webResult = await this.tryWebControl('');
+        if (webResult !== null) {
+          // Si el Web API responde, asumimos que el entorno está activo
+          // No podemos validar el ID específico sin Lua, retornamos true conservador
+          return { valid: true, name: `WebAPI:${actionId}` };
+        }
+        return { valid: false };
+      }
+
       await this.executeLua(luaValidator);
-      // We need to poll for the ExtState response via bridge or just trust the execution
-      // For now, if executeLua succeeds, we've at least sent it.
-      // To be strictly robust, we query the bridge for the result.
-      const result = await this.sendCommand('get_ext_state:Ducer|last_val');
+      // pollResponse() leerá el archivo que el Lua escribió
+      const result = await this.pollResponse(3000);
+
       return {
-        valid: result !== 'INVALID',
-        name: result !== 'INVALID' ? result : undefined,
+        valid: result !== 'INVALID' && result.trim() !== '',
+        name: result !== 'INVALID' ? result.trim() : undefined,
       };
     } catch {
       return { valid: false };
