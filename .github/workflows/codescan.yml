@@ -20,6 +20,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
     CodeScan:
         permissions:
@@ -54,7 +57,8 @@ jobs:
                     login: ${{ secrets.CODESCAN_AUTH_TOKEN }}
                     organization: ${{ secrets.CODESCAN_ORGANIZATION_KEY }}
                     projectKey: ${{ secrets.CODESCAN_PROJECT_KEY }}
+                    generateSarifFile: true
             -   name: Upload SARIF file
-                uses: github/codeql-action/upload-sarif@v3
+                uses: github/codeql-action/upload-sarif@v4
                 with:
                     sarif_file: codescan.sarif
