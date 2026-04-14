@@ -324,6 +324,25 @@ export function getProjectHash(projectRoot: string): string {
  * - Converts all path separators to forward slashes.
  * - On Windows, converts to lowercase for case-insensitivity.
  */
+
+/**
+ * Resolves a path to its canonical, real path for reliable comparison.
+ * - Resolves symbolic links.
+ * - Normalizes the path (absolute, forward slashes, lowercase on Windows/Mac).
+ *
+ * @param p The path to resolve.
+ * @returns A promise resolving to the canonical path.
+ */
+export async function getCanonicalPath(p: string): Promise<string> {
+  let realPath = path.resolve(p);
+  try {
+    realPath = await fs.promises.realpath(realPath);
+  } catch {
+    // If realpath fails (e.g., file doesn't exist), fall back to the resolved path
+  }
+  return normalizePath(realPath);
+}
+
 export function normalizePath(p: string): string {
   const platform = process.platform;
   const isWindows = platform === 'win32';

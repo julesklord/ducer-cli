@@ -15,7 +15,7 @@ import {
   DEFAULT_MEMORY_FILE_FILTERING_OPTIONS,
   type FileFilteringOptions,
 } from '../config/constants.js';
-import { GEMINI_DIR, homedir, normalizePath, isSubpath } from './paths.js';
+import { GEMINI_DIR, homedir, normalizePath, isSubpath, getCanonicalPath } from './paths.js';
 import type { ExtensionLoader } from './extensionLoader.js';
 import { debugLogger } from './debugLogger.js';
 import type { Config } from '../config/config.js';
@@ -649,10 +649,8 @@ export async function loadServerHierarchicalMemory(
   boundaryMarkers: readonly string[] = ['.git'],
 ): Promise<LoadServerHierarchicalMemoryResponse> {
   // FIX: Use real, canonical paths for a reliable comparison to handle symlinks.
-  const realCwd = normalizePath(
-    await fs.realpath(path.resolve(currentWorkingDirectory)),
-  );
-  const realHome = normalizePath(await fs.realpath(path.resolve(homedir())));
+  const realCwd = await getCanonicalPath(currentWorkingDirectory);
+  const realHome = await getCanonicalPath(homedir());
   const isHomeDirectory = realCwd === realHome;
 
   // If it is the home directory, pass an empty string to the core memory
