@@ -23,19 +23,6 @@ import type { HierarchicalMemory } from '../config/memory.js';
 import { CoreEvent, coreEvents } from './events.js';
 import { getErrorMessage } from './errors.js';
 
-// Simple console logger, similar to the one previously in CLI's config.ts
-// TODO: Integrate with a more robust server-side logger if available/appropriate.
-const logger = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  debug: (...args: any[]) =>
-    debugLogger.debug('[DEBUG] [MemoryDiscovery]', ...args),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  warn: (...args: any[]) =>
-    debugLogger.warn('[WARN] [MemoryDiscovery]', ...args),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (...args: any[]) =>
-    debugLogger.error('[ERROR] [MemoryDiscovery]', ...args),
-};
 
 export interface GeminiFileContent {
   filePath: string;
@@ -89,7 +76,8 @@ export async function deduplicatePathsByFileIdentity(
         };
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        logger.debug(
+        debugLogger.debug(
+          '[MemoryDiscovery]',
           `could not stat file for deduplication: ${filePath}. error: ${message}`,
         );
         return {
@@ -186,11 +174,13 @@ async function findProjectRoot(
           if (typeof error === 'object' && error !== null && 'code' in error) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const fsError = error as { code: string; message: string };
-            logger.warn(
+            debugLogger.warn(
+              '[MemoryDiscovery]',
               `Error checking for ${marker} at ${markerPath}: ${fsError.message}`,
             );
           } else {
-            logger.warn(
+            debugLogger.warn(
+              '[MemoryDiscovery]',
               `Non-standard error checking for ${marker} at ${markerPath}: ${String(error)}`,
             );
           }
@@ -250,7 +240,7 @@ async function getGeminiMdFilePathsInternal(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const error = result.reason;
         const message = error instanceof Error ? error.message : String(error);
-        logger.error(`Error discovering files in directory: ${message}`);
+        debugLogger.error('[MemoryDiscovery]', `Error discovering files in directory: ${message}`);
       }
     }
   }
@@ -408,7 +398,8 @@ export async function readGeminiMdFiles(
           if (!isTestEnv) {
             const message =
               error instanceof Error ? error.message : String(error);
-            logger.warn(
+            debugLogger.warn(
+              '[MemoryDiscovery]',
               `Warning: Could not read ${getAllGeminiMdFilenames()} file at ${filePath}. Error: ${message}`,
             );
           }
@@ -432,7 +423,7 @@ export async function readGeminiMdFiles(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const error = result.reason;
         const message = error instanceof Error ? error.message : String(error);
-        logger.error(`Unexpected error processing file: ${message}`);
+        debugLogger.error('[MemoryDiscovery]', `Unexpected error processing file: ${message}`);
       }
     }
   }
