@@ -5,7 +5,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 
 /**
@@ -21,12 +21,8 @@ function runPatchCreateComment(args, env = {}) {
     ...env,
   };
 
-  const parsedArgs = args
-    ? args.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((arg) => arg.replace(/^"|"$/g, '')) || []
-    : [];
-
   try {
-    const result = execFileSync('node', [scriptPath, ...parsedArgs], {
+    const result = execSync(`node ${scriptPath} ${args}`, {
       encoding: 'utf8',
       env: fullEnv,
     });

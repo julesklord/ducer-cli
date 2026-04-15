@@ -32,7 +32,7 @@ defaults:
 
 jobs:
   unassign-inactive-assignees:
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: "github.repository == 'google-gemini/gemini-cli'"
     runs-on: 'ubuntu-latest'
     permissions:
       issues: 'write'
