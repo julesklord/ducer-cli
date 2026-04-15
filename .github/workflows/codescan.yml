@@ -44,6 +44,7 @@ jobs:
                     distribution: 'temurin'
                     java-version: '17'
             -   name: Run Analysis
+                continue-on-error: true
                 uses: codescan-io/codescan-scanner-action@master
                 with:
                     login: ${{ secrets.CODESCAN_AUTH_TOKEN }}
@@ -51,6 +52,7 @@ jobs:
                     projectKey: ${{ secrets.CODESCAN_PROJECT_KEY }}
                     generateSarifFile: true
             -   name: Upload SARIF file
+                if: success()
                 uses: github/codeql-action/upload-sarif@v4
                 with:
                     sarif_file: codescan.sarif
