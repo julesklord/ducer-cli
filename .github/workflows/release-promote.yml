@@ -56,13 +56,13 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: 'Setup Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
+        uses: 'actions/setup-node@v4'
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -174,19 +174,19 @@ jobs:
             sha: '${{ github.event.inputs.ref }}'
     steps:
       - name: 'Checkout Ref'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ github.event.inputs.ref }}'
 
       - name: 'Checkout correct SHA'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ matrix.sha }}'
           path: 'release'
           fetch-depth: 0
 
       - name: 'Setup Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
+        uses: 'actions/setup-node@v4'
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -213,19 +213,19 @@ jobs:
       issues: 'write'
     steps:
       - name: 'Checkout Ref'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ github.event.inputs.ref }}'
 
       - name: 'Checkout correct SHA'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ needs.calculate-versions.outputs.PREVIEW_SHA }}'
           path: 'release'
           fetch-depth: 0
 
       - name: 'Setup Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
+        uses: 'actions/setup-node@v4'
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -280,19 +280,19 @@ jobs:
       issues: 'write'
     steps:
       - name: 'Checkout Ref'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ github.event.inputs.ref }}'
 
       - name: 'Checkout correct SHA'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ needs.calculate-versions.outputs.STABLE_SHA }}'
           path: 'release'
           fetch-depth: 0
 
       - name: 'Setup Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
+        uses: 'actions/setup-node@v4'
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -347,12 +347,12 @@ jobs:
       issues: 'write'
     steps:
       - name: 'Checkout Ref'
-        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8'
+        uses: 'actions/checkout@v4'
         with:
           ref: '${{ github.event.inputs.ref }}'
 
       - name: 'Setup Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
+        uses: 'actions/setup-node@v4'
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'

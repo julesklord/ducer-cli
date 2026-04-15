@@ -257,7 +257,7 @@ export async function findSecretFiles(
     if (depth > maxDepth) return;
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      const promises: Promise<void>[] = [];
+      const promises: Array<Promise<void>> = [];
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {

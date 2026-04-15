@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p ./pr
           echo "${REPO_NAME}" > ./pr/repo_name
-      - uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' # ratchet:actions/upload-artifact@v4
+      - uses: 'actions/upload-artifact@v4' # ratchet:actions/upload-artifact@v4
         with:
           name: 'repo_name'
           path: 'pr/'
@@ -144,13 +144,13 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ needs.parse_run_context.outputs.sha }}'
           repository: '${{ needs.parse_run_context.outputs.repository }}'
 
       - name: 'Set up Node.js ${{ matrix.node-version }}'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '${{ matrix.node-version }}'
 
@@ -188,13 +188,13 @@ jobs:
       github.repository == 'google-gemini/gemini-cli' && always() && (needs.merge_queue_skipper.result !='success' || needs.merge_queue_skipper.outputs.skip != 'true')
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ needs.parse_run_context.outputs.sha }}'
           repository: '${{ needs.parse_run_context.outputs.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
 
@@ -227,13 +227,13 @@ jobs:
     runs-on: 'gemini-cli-windows-16-core'
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ needs.parse_run_context.outputs.sha }}'
           repository: '${{ needs.parse_run_context.outputs.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -307,14 +307,14 @@ jobs:
       github.repository == 'google-gemini/gemini-cli' && always() && (needs.merge_queue_skipper.result !='success' || needs.merge_queue_skipper.outputs.skip != 'true')
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ needs.parse_run_context.outputs.sha }}'
           repository: '${{ needs.parse_run_context.outputs.repository }}'
           fetch-depth: 0
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
 
@@ -344,7 +344,7 @@ jobs:
 
       - name: 'Upload Reliability Logs'
         if: "always() && steps.check_evals.outputs.should_run == 'true'"
-        uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' # ratchet:actions/upload-artifact@v4
+        uses: 'actions/upload-artifact@v4' # ratchet:actions/upload-artifact@v4
         with:
           name: 'eval-logs-${{ github.run_id }}-${{ github.run_attempt }}'
           path: 'evals/logs/api-reliability.jsonl'

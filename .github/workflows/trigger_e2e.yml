@@ -29,7 +29,7 @@ jobs:
           mkdir -p ./pr
           echo "${REPO_NAME}" > ./pr/repo_name
           echo "${HEAD_SHA}" > ./pr/head_sha
-      - uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' # ratchet:actions/upload-artifact@v4
+      - uses: 'actions/upload-artifact@v4' # ratchet:actions/upload-artifact@v4
         with:
           name: 'repo_name'
           path: 'pr/'

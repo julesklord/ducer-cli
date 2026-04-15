@@ -42,13 +42,13 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js ${{ matrix.node-version }}'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '${{ matrix.node-version }}'
 
@@ -84,13 +84,13 @@ jobs:
     if: "github.repository == 'google-gemini/gemini-cli'"
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
 
@@ -122,13 +122,13 @@ jobs:
     if: "github.repository == 'google-gemini/gemini-cli'"
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
