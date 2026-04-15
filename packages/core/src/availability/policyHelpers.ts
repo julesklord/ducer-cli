@@ -18,7 +18,6 @@ import {
   createSingleModelChain,
   getModelPolicyChain,
   getFlashLitePolicyChain,
-  SILENT_ACTIONS,
 } from './policyCatalog.js';
 import {
   DEFAULT_GEMINI_FLASH_LITE_MODEL,
@@ -30,7 +29,6 @@ import {
 } from '../config/models.js';
 import type { ModelSelectionResult } from './modelAvailabilityService.js';
 import type { ModelConfigKey } from '../services/modelConfigService.js';
-import { ApprovalMode } from '../policy/types.js';
 
 /**
  * Resolves the active policy chain for the given config, ensuring the
@@ -45,7 +43,7 @@ export function resolvePolicyChain(
     preferredModel ?? config.getActiveModel?.() ?? config.getModel();
   const configuredModel = config.getModel();
 
-  let chain: ModelPolicyChain | undefined;
+  let chain;
   const useGemini31 = config.getGemini31LaunchedSync?.() ?? false;
   const useGemini31FlashLite =
     config.getGemini31FlashLiteLaunchedSync?.() ?? false;
@@ -105,55 +103,45 @@ export function resolvePolicyChain(
       // No matching modelChains found, default to single model chain
       chain = createSingleModelChain(modelFromConfig);
     }
-    chain = applyDynamicSlicing(chain, resolvedModel, wrapsAround);
-  } else {
-    // --- LEGACY PATH ---
+    return applyDynamicSlicing(chain, resolvedModel, wrapsAround);
+  }
 
-    if (resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL) {
-      chain = getFlashLitePolicyChain();
-    } else if (
-      isGemini3Model(resolvedModel, config) ||
-      isAutoPreferred ||
-      isAutoConfigured
-    ) {
-      if (hasAccessToPreview) {
-        const previewEnabled =
-          isGemini3Model(resolvedModel, config) ||
-          preferredModel === PREVIEW_GEMINI_MODEL_AUTO ||
-          configuredModel === PREVIEW_GEMINI_MODEL_AUTO;
-        chain = getModelPolicyChain({
-          previewEnabled,
-          userTier: config.getUserTier(),
-          useGemini31,
-          useGemini31FlashLite,
-          useCustomToolModel,
-        });
-      } else {
-        // User requested Gemini 3 but has no access. Proactively downgrade
-        // to the stable Gemini 2.5 chain.
-        chain = getModelPolicyChain({
-          previewEnabled: false,
-          userTier: config.getUserTier(),
-          useGemini31,
-          useGemini31FlashLite,
-          useCustomToolModel,
-        });
-      }
+  // --- LEGACY PATH ---
+
+  if (resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL) {
+    chain = getFlashLitePolicyChain();
+  } else if (
+    isGemini3Model(resolvedModel, config) ||
+    isAutoPreferred ||
+    isAutoConfigured
+  ) {
+    if (hasAccessToPreview) {
+      const previewEnabled =
+        isGemini3Model(resolvedModel, config) ||
+        preferredModel === PREVIEW_GEMINI_MODEL_AUTO ||
+        configuredModel === PREVIEW_GEMINI_MODEL_AUTO;
+      chain = getModelPolicyChain({
+        previewEnabled,
+        userTier: config.getUserTier(),
+        useGemini31,
+        useGemini31FlashLite,
+        useCustomToolModel,
+      });
     } else {
-      chain = createSingleModelChain(modelFromConfig);
+      // User requested Gemini 3 but has no access. Proactively downgrade
+      // to the stable Gemini 2.5 chain.
+      chain = getModelPolicyChain({
+        previewEnabled: false,
+        userTier: config.getUserTier(),
+        useGemini31,
+        useGemini31FlashLite,
+        useCustomToolModel,
+      });
     }
-    chain = applyDynamicSlicing(chain, resolvedModel, wrapsAround);
+  } else {
+    chain = createSingleModelChain(modelFromConfig);
   }
-
-  // Apply Unified Silent Injection for Plan Mode with defensive checks
-  if (config?.getApprovalMode?.() === ApprovalMode.PLAN) {
-    return chain.map((policy) => ({
-      ...policy,
-      actions: { ...SILENT_ACTIONS },
-    }));
-  }
-
-  return chain;
+  return applyDynamicSlicing(chain, resolvedModel, wrapsAround);
 }
 
 /**

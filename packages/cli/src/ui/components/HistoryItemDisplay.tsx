@@ -51,6 +51,7 @@ interface HistoryItemDisplayProps {
   isFirstThinking?: boolean;
   isFirstAfterThinking?: boolean;
   isToolGroupBoundary?: boolean;
+  suppressNarration?: boolean;
 }
 
 export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
@@ -64,6 +65,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
   isFirstThinking = false,
   isFirstAfterThinking = false,
   isToolGroupBoundary = false,
+  suppressNarration = false,
 }) => {
   const settings = useSettings();
   const inlineThinkingMode = getInlineThinkingMode(settings);
@@ -73,6 +75,17 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
     (isFirstAfterThinking && inlineThinkingMode !== 'off') ||
     isToolGroupBoundary
   );
+
+  // If there's a topic update in this turn, we suppress the regular narration
+  // and thoughts as they are being "replaced" by the update_topic tool.
+  if (
+    suppressNarration &&
+    (itemForDisplay.type === 'thinking' ||
+      itemForDisplay.type === 'gemini' ||
+      itemForDisplay.type === 'gemini_content')
+  ) {
+    return null;
+  }
 
   return (
     <Box
@@ -193,6 +206,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           borderTop={itemForDisplay.borderTop}
           borderBottom={itemForDisplay.borderBottom}
           isExpandable={isExpandable}
+          isToolGroupBoundary={isToolGroupBoundary}
         />
       )}
       {itemForDisplay.type === 'subagent' && (

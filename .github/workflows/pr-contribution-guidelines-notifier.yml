@@ -9,7 +9,7 @@ jobs:
   notify-process-change:
     runs-on: 'ubuntu-latest'
     if: |-
-      github.repository == 'julesklord/ducer-cli'
+      github.repository == 'google-gemini/gemini-cli' || github.repository == 'google-gemini/maintainers-gemini-cli'
     permissions:
       pull-requests: 'write'
     steps:
@@ -118,7 +118,7 @@ jobs:
             const comment = `
             Hi @${username}, thank you so much for your contribution to Gemini CLI! We really appreciate the time and effort you've put into this.
 
-            We're making some updates to our contribution process to improve how we track and review changes. Please take a moment to review our recent discussion post: [Improving Our Contribution Process & Introducing New Guidelines](https://github.com/julesklord/ducer-cli/discussions/16706).
+            We're making some updates to our contribution process to improve how we track and review changes. Please take a moment to review our recent discussion post: [Improving Our Contribution Process & Introducing New Guidelines](https://github.com/google-gemini/gemini-cli/discussions/16706).
 
             Key Update: Starting **January 26, 2026**, the Gemini CLI project will require all pull requests to be associated with an existing issue. Any pull requests not linked to an issue by that date will be automatically closed.
 

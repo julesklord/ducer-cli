@@ -74,7 +74,7 @@ export class ModelRouterService {
    */
   async route(context: RoutingContext): Promise<RoutingDecision> {
     const startTime = Date.now();
-    let decision: RoutingDecision | undefined;
+    let decision: RoutingDecision;
 
     const [enableNumericalRouting, thresholdValue] = await Promise.all([
       this.config.getNumericalRoutingEnabled(),
@@ -117,10 +117,10 @@ export class ModelRouterService {
       );
     } finally {
       const event = new ModelRoutingEvent(
-        decision?.model || 'unknown',
-        decision?.metadata?.source || 'unknown',
-        decision?.metadata?.latencyMs || 0,
-        decision?.metadata?.reasoning,
+        decision!.model,
+        decision!.metadata.source,
+        decision!.metadata.latencyMs,
+        decision!.metadata.reasoning,
         failed,
         error_message,
         this.config.getApprovalMode(),

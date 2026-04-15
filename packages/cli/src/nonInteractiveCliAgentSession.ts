@@ -37,7 +37,6 @@ import {
   LegacyAgentSession,
   ToolErrorType,
   geminiPartsToContentParts,
-  displayContentToString,
   debugLogger,
 } from '@google/gemini-cli-core';
 
@@ -471,8 +470,7 @@ export async function runNonInteractive({
           case 'tool_response': {
             textOutput.ensureTrailingNewline();
             if (streamFormatter) {
-              const display = event.display?.result;
-              const displayText = displayContentToString(display);
+              const displayText = getTextContent(event.displayContent);
               const errorMsg = getTextContent(event.content) ?? 'Tool error';
               streamFormatter.emitEvent({
                 type: JsonStreamEventType.TOOL_RESULT,
@@ -492,8 +490,7 @@ export async function runNonInteractive({
               });
             }
             if (event.isError) {
-              const display = event.display?.result;
-              const displayText = displayContentToString(display);
+              const displayText = getTextContent(event.displayContent);
               const errorMsg = getTextContent(event.content) ?? 'Tool error';
 
               if (event.data?.['errorType'] === ToolErrorType.STOP_EXECUTION) {

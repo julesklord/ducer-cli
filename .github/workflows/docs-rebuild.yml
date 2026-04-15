@@ -8,7 +8,7 @@ on:
 permissions: {}
 jobs:
   trigger-rebuild:
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: "github.repository == 'google-gemini/gemini-cli'"
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Trigger rebuild'

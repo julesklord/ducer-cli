@@ -11,13 +11,6 @@ import type { FileDiscoveryService } from '../services/fileDiscoveryService.js';
 import type { FileFilteringOptions } from '../config/constants.js';
 import { debugLogger } from './debugLogger.js';
 import { getErrorMessage } from './errors.js';
-// Simple console logger for now.
-// TODO: Integrate with a more robust server-side logger.
-const logger = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  debug: (...args: any[]) =>
-    debugLogger.debug('[DEBUG] [BfsFileSearch]', ...args),
-};
 
 interface BfsFileSearchOptions {
   fileName: string;
@@ -69,7 +62,8 @@ export async function bfsFileSearch(
     if (currentBatch.length === 0) continue;
 
     if (debug) {
-      logger.debug(
+      debugLogger.debug(
+          '[BfsFileSearch]',
         `Scanning [${scannedDirCount}/${maxDirs}]: batch of ${currentBatch.length}`,
       );
     }
@@ -85,7 +79,7 @@ export async function bfsFileSearch(
           `[WARN] Skipping unreadable directory: ${currentDir} (${getErrorMessage(error)})`,
         );
         if (debug) {
-          logger.debug(`Full error for ${currentDir}:`, error);
+          debugLogger.debug('[BfsFileSearch]', `Full error for ${currentDir}:`, error);
         }
         return { currentDir, entries: [] };
       }
@@ -137,7 +131,8 @@ export function bfsFileSearchSync(
       scannedDirCount++;
 
       if (debug) {
-        logger.debug(
+        debugLogger.debug(
+          '[BfsFileSearch]',
           `Scanning Sync [${scannedDirCount}/${maxDirs}]: ${currentDir}`,
         );
       }

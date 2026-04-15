@@ -175,7 +175,8 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 export const ducerCommand = {
   command: 'ducer <subcommand>',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: any) => {
+  builder: (yargs: import('yargs').Argv) => {
+    return yargs
     return yargs
       .positional('subcommand', {
         type: 'string',

@@ -25,7 +25,7 @@ import { GrpcTransportFactory } from '@a2a-js/sdk/client/grpc';
 import * as grpc from '@grpc/grpc-js';
 import { v4 as uuidv4 } from 'uuid';
 import { Agent as UndiciAgent, ProxyAgent } from 'undici';
-import { isObject } from './a2aUtils.js';
+import { normalizeAgentCard } from './a2aUtils.js';
 import type { AgentCardLoadOptions } from './types.js';
 import type { Config } from '../config/config.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -138,11 +138,10 @@ export class A2AClientManager {
       rawCard = await resolver.resolve(options.url, '');
     }
 
-    if (!isObject(rawCard)) {
-      throw new Error('Agent card is missing.');
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const agentCard = rawCard as unknown as AgentCard;
+    // TODO: Remove normalizeAgentCard once @a2a-js/sdk handles
+    // proto field name aliases (supportedInterfaces → additionalInterfaces,
+    // protocolBinding → transport).
+    const agentCard = normalizeAgentCard(rawCard);
 
     const grpcUrl =
       agentCard.additionalInterfaces?.find((i) => i.transport === 'GRPC')

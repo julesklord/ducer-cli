@@ -42,7 +42,7 @@ on:
 
 jobs:
   change-tags:
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: "github.repository == 'google-gemini/gemini-cli'"
     environment: "${{ github.event.inputs.environment || 'prod' }}"
     runs-on: 'ubuntu-latest'
     permissions:
