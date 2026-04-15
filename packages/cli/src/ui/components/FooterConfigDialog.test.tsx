@@ -256,7 +256,7 @@ describe('<FooterConfigDialog />', () => {
       expect(nextLine).toContain('·');
       expect(nextLine).toContain('~/project/path');
       expect(nextLine).toContain('docker');
-      expect(nextLine).toContain('42% used');
+      expect(nextLine).toContain('97%');
     });
 
     await expect(renderResult).toMatchSvgSnapshot();
