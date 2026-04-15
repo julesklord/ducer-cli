@@ -25,16 +25,16 @@ permissions:
 jobs:
   detect-changes:
     name: 'Detect Steering Changes'
-    runs-on: 'ubuntu-latest'
+    runs-on: 'gemini-cli-ubuntu-16-core'
     # Security: pull_request_target allows secrets, so we must gate carefully.
     # Detection should not run code from the fork.
-    if: "github.repository == 'julesklord/ducer-cli' && github.event.pull_request.draft == false"
+    if: "github.repository == 'google-gemini/gemini-cli' && github.event.pull_request.draft == false"
     outputs:
       SHOULD_RUN: '${{ steps.detect.outputs.SHOULD_RUN }}'
       STEERING_DETECTED: '${{ steps.detect.outputs.STEERING_DETECTED }}'
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           # Check out the trusted code from main for detection
           fetch-depth: 0
@@ -89,14 +89,14 @@ jobs:
     if: "needs.detect-changes.outputs.SHOULD_RUN == 'true'"
     # Manual approval gate via environment
     environment: 'eval-gate'
-    runs-on: 'ubuntu-latest'
+    runs-on: 'gemini-cli-ubuntu-16-core'
     env:
       # CENTRALIZED MODEL LIST
       MODEL_LIST: 'gemini-3-flash-preview'
 
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           # Check out the fork's PR code for the actual evaluation
           # This only runs AFTER manual approval
@@ -119,7 +119,7 @@ jobs:
           fi
 
       - name: 'Set up Node.js'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions/setup-node@v4.4.0
+        uses: 'actions/setup-node@v4' # ratchet:actions/setup-node@v4.4.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -181,7 +181,7 @@ jobs:
               echo ""
 
               if [[ "${{ steps.analysis.outputs.MISSING_EVALS }}" == "true" ]]; then
-                echo "- ⚠️ **Consider adding Evals:** No behavioral evaluations (\`evals/*.eval.ts\`) were added or updated in this PR. Consider [adding a test case](https://github.com/julesklord/ducer-cli/blob/main/evals/README.md#creating-an-evaluation) to verify the new behavior and prevent regressions."
+                echo "- ⚠️ **Consider adding Evals:** No behavioral evaluations (\`evals/*.eval.ts\`) were added or updated in this PR. Consider [adding a test case](https://github.com/google-gemini/gemini-cli/blob/main/evals/README.md#creating-an-evaluation) to verify the new behavior and prevent regressions."
               fi
 
               if [[ "${{ steps.analysis.outputs.IS_MAINTAINER }}" == "true" ]]; then

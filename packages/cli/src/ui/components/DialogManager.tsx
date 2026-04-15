@@ -27,7 +27,6 @@ import { PermissionsModifyTrustDialog } from './PermissionsModifyTrustDialog.js'
 import { ModelDialog } from './ModelDialog.js';
 import { theme } from '../semantic-colors.js';
 import { useUIState } from '../contexts/UIStateContext.js';
-import { useQuotaState } from '../contexts/QuotaContext.js';
 import { useUIActions } from '../contexts/UIActionsContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
@@ -53,7 +52,6 @@ export const DialogManager = ({
   const settings = useSettings();
 
   const uiState = useUIState();
-  const quotaState = useQuotaState();
   const uiActions = useUIActions();
   const {
     constrainHeight,
@@ -76,50 +74,54 @@ export const DialogManager = ({
       />
     );
   }
-  if (quotaState.proQuotaRequest) {
+  if (uiState.quota.proQuotaRequest) {
     return (
       <ProQuotaDialog
-        failedModel={quotaState.proQuotaRequest.failedModel}
-        fallbackModel={quotaState.proQuotaRequest.fallbackModel}
-        message={quotaState.proQuotaRequest.message}
-        isTerminalQuotaError={quotaState.proQuotaRequest.isTerminalQuotaError}
-        isModelNotFoundError={!!quotaState.proQuotaRequest.isModelNotFoundError}
-        authType={quotaState.proQuotaRequest.authType}
+        failedModel={uiState.quota.proQuotaRequest.failedModel}
+        fallbackModel={uiState.quota.proQuotaRequest.fallbackModel}
+        message={uiState.quota.proQuotaRequest.message}
+        isTerminalQuotaError={
+          uiState.quota.proQuotaRequest.isTerminalQuotaError
+        }
+        isModelNotFoundError={
+          !!uiState.quota.proQuotaRequest.isModelNotFoundError
+        }
+        authType={uiState.quota.proQuotaRequest.authType}
         tierName={config?.getUserTierName()}
         onChoice={uiActions.handleProQuotaChoice}
       />
     );
   }
-  if (quotaState.validationRequest) {
+  if (uiState.quota.validationRequest) {
     return (
       <ValidationDialog
-        validationLink={quotaState.validationRequest.validationLink}
+        validationLink={uiState.quota.validationRequest.validationLink}
         validationDescription={
-          quotaState.validationRequest.validationDescription
+          uiState.quota.validationRequest.validationDescription
         }
-        learnMoreUrl={quotaState.validationRequest.learnMoreUrl}
+        learnMoreUrl={uiState.quota.validationRequest.learnMoreUrl}
         onChoice={uiActions.handleValidationChoice}
       />
     );
   }
-  if (quotaState.overageMenuRequest) {
+  if (uiState.quota.overageMenuRequest) {
     return (
       <OverageMenuDialog
-        failedModel={quotaState.overageMenuRequest.failedModel}
-        fallbackModel={quotaState.overageMenuRequest.fallbackModel}
-        resetTime={quotaState.overageMenuRequest.resetTime}
-        creditBalance={quotaState.overageMenuRequest.creditBalance}
+        failedModel={uiState.quota.overageMenuRequest.failedModel}
+        fallbackModel={uiState.quota.overageMenuRequest.fallbackModel}
+        resetTime={uiState.quota.overageMenuRequest.resetTime}
+        creditBalance={uiState.quota.overageMenuRequest.creditBalance}
         onChoice={uiActions.handleOverageMenuChoice}
       />
     );
   }
-  if (quotaState.emptyWalletRequest) {
+  if (uiState.quota.emptyWalletRequest) {
     return (
       <EmptyWalletDialog
-        failedModel={quotaState.emptyWalletRequest.failedModel}
-        fallbackModel={quotaState.emptyWalletRequest.fallbackModel}
-        resetTime={quotaState.emptyWalletRequest.resetTime}
-        onGetCredits={quotaState.emptyWalletRequest.onGetCredits}
+        failedModel={uiState.quota.emptyWalletRequest.failedModel}
+        fallbackModel={uiState.quota.emptyWalletRequest.fallbackModel}
+        resetTime={uiState.quota.emptyWalletRequest.resetTime}
+        onGetCredits={uiState.quota.emptyWalletRequest.onGetCredits}
         onChoice={uiActions.handleEmptyWalletChoice}
       />
     );

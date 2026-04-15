@@ -1,5 +1,10 @@
 /**
  * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @license
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -25,7 +30,7 @@ export class CompatibilityShield {
 
     const requiredMethods = ['sendMessageStream'];
     const missingMethods = requiredMethods.filter(
-      (m) => typeof (client as Record<string, any>)[m] !== 'function',
+      (m) => typeof (client as Record<string, unknown>)[m] !== 'function',
     );
 
     if (missingMethods.length > 0) {

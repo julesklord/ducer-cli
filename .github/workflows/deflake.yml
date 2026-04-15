@@ -24,13 +24,13 @@ permissions:
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
   cancel-in-progress: |-
-    ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/ducer' && !startsWith(github.ref, 'refs/heads/release/') }}
+    ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   deflake_e2e_linux:
     name: 'E2E Test (Linux) - ${{ matrix.sandbox }}'
-    runs-on: 'ubuntu-latest'
-    if: "github.repository == 'julesklord/ducer-cli'"
+    runs-on: 'gemini-cli-ubuntu-16-core'
+    if: "github.repository == 'google-gemini/gemini-cli'"
     strategy:
       fail-fast: false
       matrix:
@@ -42,13 +42,13 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js ${{ matrix.node-version }}'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '${{ matrix.node-version }}'
 
@@ -81,16 +81,16 @@ jobs:
   deflake_e2e_mac:
     name: 'E2E Test (macOS)'
     runs-on: 'macos-latest'
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: "github.repository == 'google-gemini/gemini-cli'"
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
 
@@ -118,17 +118,17 @@ jobs:
 
   deflake_e2e_windows:
     name: 'Slow E2E - Win'
-    runs-on: 'windows-latest'
-    if: "github.repository == 'julesklord/ducer-cli'"
+    runs-on: 'gemini-cli-windows-16-core'
+    if: "github.repository == 'google-gemini/gemini-cli'"
     steps:
       - name: 'Checkout'
-        uses: 'actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955' # ratchet:actions/checkout@v5
+        uses: 'actions/checkout@v4' # ratchet:actions/checkout@v5
         with:
           ref: '${{ github.event.pull_request.head.sha }}'
           repository: '${{ github.repository }}'
 
       - name: 'Set up Node.js 20.x'
-        uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' # ratchet:actions-node@v4
+        uses: 'actions/setup-node@v4' # ratchet:actions-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'

@@ -18,8 +18,8 @@ on:
 
 jobs:
   save_repo_name:
-    if: "github.repository == 'julesklord/ducer-cli'"
-    runs-on: 'ubuntu-latest'
+    if: "github.repository == 'google-gemini/gemini-cli'"
+    runs-on: 'gemini-cli-ubuntu-16-core'
     steps:
       - name: 'Save Repo name'
         env:
@@ -29,14 +29,14 @@ jobs:
           mkdir -p ./pr
           echo "${REPO_NAME}" > ./pr/repo_name
           echo "${HEAD_SHA}" > ./pr/head_sha
-      - uses: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' # ratchet:actions/upload-artifact@v4
+      - uses: 'actions/upload-artifact@v4' # ratchet:actions/upload-artifact@v4
         with:
           name: 'repo_name'
           path: 'pr/'
   trigger_e2e:
     name: 'Trigger e2e'
-    if: "github.repository == 'julesklord/ducer-cli'"
-    runs-on: 'ubuntu-latest'
+    if: "github.repository == 'google-gemini/gemini-cli'"
+    runs-on: 'gemini-cli-ubuntu-16-core'
     steps:
       - id: 'trigger-e2e'
         run: |

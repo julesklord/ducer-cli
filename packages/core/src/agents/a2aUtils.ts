@@ -12,6 +12,8 @@ import type {
   FilePart,
   Artifact,
   TaskState,
+  AgentCard,
+  AgentInterface,
 } from '@a2a-js/sdk';
 import type { SendMessageResult } from './a2a-client-manager.js';
 import type { SubagentActivityItem } from './types.js';
@@ -232,6 +234,46 @@ function extractPartText(part: Part): string {
 }
 
 /**
+ * Normalizes proto field name aliases that the SDK doesn't handle yet.
+ * The A2A proto spec uses `supported_interfaces` and `protocol_binding`,
+ * while the SDK expects `additionalInterfaces` and `transport`.
+ * TODO: Remove once @a2a-js/sdk handles these aliases natively.
+ */
+export function normalizeAgentCard(card: unknown): AgentCard {
+  if (!isObject(card)) {
+    throw new Error('Agent card is missing.');
+  }
+
+  // Shallow-copy to avoid mutating the SDK's cached object.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  const result = { ...card } as unknown as AgentCard;
+
+  // Map supportedInterfaces → additionalInterfaces if needed
+  if (!result.additionalInterfaces) {
+    const raw = card;
+    if (Array.isArray(raw['supportedInterfaces'])) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      result.additionalInterfaces = raw[
+        'supportedInterfaces'
+      ] as AgentInterface[];
+    }
+  }
+
+  // Map protocolBinding → transport on each interface
+  for (const intf of result.additionalInterfaces ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const raw = intf as unknown as Record<string, unknown>;
+    const binding = raw['protocolBinding'];
+
+    if (!intf.transport && typeof binding === 'string') {
+      intf.transport = binding;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Extracts contextId and taskId from a Message, Task, or Update response.
  * Follows the pattern from the A2A CLI sample to maintain conversational continuity.
  */
@@ -305,6 +347,6 @@ export function isTerminalState(state: TaskState | undefined): boolean {
 /**
  * Type guard to check if a value is a non-array object.
  */
-export function isObject(val: unknown): val is Record<string, unknown> {
+function isObject(val: unknown): val is Record<string, unknown> {
   return typeof val === 'object' && val !== null && !Array.isArray(val);
 }

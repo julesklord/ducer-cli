@@ -634,9 +634,11 @@ export class ChatRecordingService {
         chatsDir,
         shortId,
       );
-      for (const file of matchingFiles) {
-        await this.deleteSessionAndArtifacts(chatsDir, file, tempDir);
-      }
+      await Promise.all(
+        matchingFiles.map((file) =>
+          this.deleteSessionAndArtifacts(chatsDir, file, tempDir),
+        ),
+      );
     } catch (error) {
       debugLogger.error('Error deleting session file.', error);
       throw error;

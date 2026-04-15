@@ -1,5 +1,10 @@
 /**
  * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @license
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -175,7 +180,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 export const ducerCommand = {
   command: 'ducer <subcommand>',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: any) => {
+  builder: (yargs: import("yargs").Argv) => {
     return yargs
       .positional('subcommand', {
         type: 'string',
