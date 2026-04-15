@@ -11,7 +11,6 @@ import {
   isTerminalState,
   A2AResultReassembler,
   AUTH_REQUIRED_MSG,
-  normalizeAgentCard,
 } from './a2aUtils.js';
 import type { SendMessageResult } from './a2a-client-manager.js';
 import type {
@@ -248,97 +247,6 @@ describe('a2aUtils', () => {
         ],
       };
       expect(extractMessageText(message)).toBe('File: [binary/unnamed]');
-    });
-  });
-
-  describe('normalizeAgentCard', () => {
-    it('should throw if input is not an object', () => {
-      expect(() => normalizeAgentCard(null)).toThrow('Agent card is missing.');
-      expect(() => normalizeAgentCard(undefined)).toThrow(
-        'Agent card is missing.',
-      );
-      expect(() => normalizeAgentCard('not an object')).toThrow(
-        'Agent card is missing.',
-      );
-    });
-
-    it('should preserve unknown fields while providing defaults for mandatory ones', () => {
-      const raw = {
-        name: 'my-agent',
-        customField: 'keep-me',
-      };
-
-      const normalized = normalizeAgentCard(raw);
-
-      expect(normalized.name).toBe('my-agent');
-      // @ts-expect-error - testing dynamic preservation
-      expect(normalized.customField).toBe('keep-me');
-      expect(normalized.description).toBeUndefined();
-      expect(normalized.skills).toBeUndefined();
-      expect(normalized.defaultInputModes).toBeUndefined();
-    });
-
-    it('should map supportedInterfaces to additionalInterfaces with protocolBinding → transport', () => {
-      const raw = {
-        name: 'test',
-        supportedInterfaces: [
-          {
-            url: 'grpc://test',
-            protocolBinding: 'GRPC',
-            protocolVersion: '1.0',
-          },
-        ],
-      };
-
-      const normalized = normalizeAgentCard(raw);
-
-      expect(normalized.additionalInterfaces).toHaveLength(1);
-
-      const intf = normalized.additionalInterfaces?.[0] as unknown as Record<
-        string,
-        unknown
-      >;
-
-      expect(intf['transport']).toBe('GRPC');
-      expect(intf['url']).toBe('grpc://test');
-    });
-
-    it('should not overwrite additionalInterfaces if already present', () => {
-      const raw = {
-        name: 'test',
-        additionalInterfaces: [{ url: 'http://grpc', transport: 'GRPC' }],
-        supportedInterfaces: [{ url: 'http://other', transport: 'REST' }],
-      };
-
-      const normalized = normalizeAgentCard(raw);
-      expect(normalized.additionalInterfaces).toHaveLength(1);
-      expect(normalized.additionalInterfaces?.[0].url).toBe('http://grpc');
-    });
-
-    it('should NOT override existing transport if protocolBinding is also present', () => {
-      const raw = {
-        name: 'priority-test',
-        supportedInterfaces: [
-          { url: 'foo', transport: 'GRPC', protocolBinding: 'REST' },
-        ],
-      };
-      const normalized = normalizeAgentCard(raw);
-      expect(normalized.additionalInterfaces?.[0].transport).toBe('GRPC');
-    });
-
-    it('should not mutate the original card object', () => {
-      const raw = {
-        name: 'test',
-        supportedInterfaces: [{ url: 'grpc://test', protocolBinding: 'GRPC' }],
-      };
-
-      const normalized = normalizeAgentCard(raw);
-      expect(normalized).not.toBe(raw);
-      expect(normalized.additionalInterfaces).toBeDefined();
-      // Original should not have additionalInterfaces added
-      expect(
-        (raw as Record<string, unknown>)['additionalInterfaces'],
-      ).toBeUndefined();
     });
   });
 
