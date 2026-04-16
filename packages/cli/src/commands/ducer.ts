@@ -30,7 +30,9 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
     return pluginDucerCommand.builder(yargs)
       .middleware((argv: DucerArgs) => {
         initializeOutputListenersAndFlush();
-        argv['isCommand'] = true;
+        if (argv.subcommand) {
+          argv['isCommand'] = true;
+        }
       });
   },
   handler: async (argv: DucerArgs) => {

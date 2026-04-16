@@ -215,7 +215,12 @@ export async function parseArguments(
 
       const firstArg = argv._[0];
       if (typeof firstArg === 'string' && subcommands.includes(firstArg)) {
-        argv['isCommand'] = true;
+        // Special case: 'ducer' with no subcommand is considered interactive TUI
+        if (firstArg === 'ducer' && argv._.length === 1) {
+          argv['isCommand'] = false;
+        } else {
+          argv['isCommand'] = true;
+        }
       }
     }, true)
     // Ensure validation flows through .fail() for clean UX
