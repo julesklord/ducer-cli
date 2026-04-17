@@ -65,9 +65,10 @@ export async function handleDucerCommand(
   } else if (subcommand === 'do' || !subcommand || subcommand === 'service') {
     // prepare context
     const context = DAW_CONTROL_PROMPT;
+    const finalQuery = (argv.query as string) || (argv['queryPositional'] as string);
 
-    if (subcommand === 'do' && argv.query) {
-      await ducer.getInsight(argv.query, context, config);
+    if (subcommand === 'do' && finalQuery) {
+      await ducer.getInsight(finalQuery, context, config);
     } else if (subcommand === 'service') {
       await runServiceLoop(ducer, context, config);
     } else {
@@ -173,7 +174,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 }
 
 export const ducerCommand = {
-  command: 'ducer <subcommand>',
+  command: 'ducer [subcommand] [queryPositional]',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
   builder: (yargs: any) => {
     return yargs
@@ -181,6 +182,10 @@ export const ducerCommand = {
         type: 'string',
         describe: 'Subcomando de Ducer (analyze, do, service)',
         choices: ['analyze', 'do', 'service'],
+      })
+      .positional('queryPositional', {
+        type: 'string',
+        describe: 'Consulta en lenguaje natural (solo para modo do)',
       })
       .option('file', {
         alias: 'f',

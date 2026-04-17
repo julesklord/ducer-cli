@@ -105,20 +105,25 @@ export class DucerCore {
     const systemPrompt = this.getSystemPrompt(mode) + '\n\n' + context;
     const toolDeclarations = this.toolsManager.getMusicToolsDeclarations();
 
-    // Historial de mensajes para el loop multi-turn
-    const messages: Array<{ role: string; content: string }> = [
-      { role: 'user', content: systemPrompt + '\n\nUSER: ' + query },
-    ];
+    console.log(`[Ducer] Procesando consulta: "${query}"`);
+
+    // Historial acumulado para mantener el contexto entre herramientas
+    const history: Array<{ role: string; parts: any[] }> = [];
+    
+    // El input inicial combina el sistema y la query
+    let currentInput: any[] = [{ text: systemPrompt + '\n\nUSER: ' + query }];
 
     let fullResponse = '';
     let continueLoop = true;
+    let turnCount = 0;
 
-    while (continueLoop) {
-      continueLoop = false; // se pone en true si hay tool-calls
+    while (continueLoop && turnCount < 10) {
+      turnCount++;
+      continueLoop = false;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const responseStream = (geminiClient as any).sendMessageStream(
-        messages.map((m) => ({ text: m.content })),
+        currentInput,
         new AbortController().signal,
         sessionId,
         toolDeclarations,
@@ -140,31 +145,29 @@ export class DucerCore {
         }
       }
 
-      // Appendear respuesta del asistente al historial
       if (assistantTextThisTurn) {
-        messages.push({ role: 'assistant', content: assistantTextThisTurn });
+        history.push({ role: 'user', parts: currentInput });
+        history.push({ role: 'assistant', parts: [{ text: assistantTextThisTurn }] });
       }
 
-      // Si hubo tool-calls, ejecutarlas y appendear resultados
       if (toolCallsThisTurn.length > 0) {
         continueLoop = true;
-        const toolResultParts: string[] = [];
+        const toolResultParts: any[] = [];
 
         for (const call of toolCallsThisTurn) {
-          console.log(`\n[Ducer] Ejecutando tool: ${call.name}`);
+          console.log(`\n[Ducer] Ejecutando: ${call.name}...`);
           const result = await this.dispatchTool(call);
-          console.log(
-            `[Ducer] Tool result (preview): ${result.substring(0, 120)}...`,
-          );
-          toolResultParts.push(`[TOOL: ${call.name}]\nRESULT: ${result}`);
+          console.log(`[Ducer] Resultado de ${call.name} obtenido.`);
+          toolResultParts.push({ text: `[RESULTADO TOOL ${call.name}]: ${result}` });
         }
 
-        // Appendear resultados como mensaje del usuario (formato que acepta Gemini)
-        messages.push({
-          role: 'user',
-          content: toolResultParts.join('\n\n'),
-        });
+        // El siguiente input para la IA son los resultados de las herramientas
+        currentInput = toolResultParts;
       }
+    }
+
+    if (turnCount >= 10) {
+      console.warn('[Ducer] Límite de turnos alcanzado.');
     }
 
     return fullResponse;
