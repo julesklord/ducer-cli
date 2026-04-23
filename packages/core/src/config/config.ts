@@ -1385,15 +1385,6 @@ export class Config implements McpContext, AgentLoopContext {
   isInitialized(): boolean {
     return this.initialized;
   }
-
-  /**
-   * Gets custom file exclusion patterns from configuration.
-   * This could read from settings files, CLI arguments, or environment variables.
-   *
-   * @returns An array of custom exclusion patterns.
-   */
-  getCustomExcludes?(): string[];
-
   /**
    * Dedups initialization requests using a shared promise that is only resolved
    * once.
