@@ -1387,6 +1387,14 @@ export class Config implements McpContext, AgentLoopContext {
   }
 
   /**
+   * Gets custom file exclusion patterns from configuration.
+   * This could read from settings files, CLI arguments, or environment variables.
+   *
+   * @returns An array of custom exclusion patterns.
+   */
+  getCustomExcludes?(): string[];
+
+  /**
    * Dedups initialization requests using a shared promise that is only resolved
    * once.
    */
@@ -2755,6 +2763,7 @@ export class Config implements McpContext, AgentLoopContext {
    * Gets custom file exclusion patterns from configuration.
    * TODO: This is a placeholder implementation. In the future, this could
    * read from settings files, CLI arguments, or environment variables.
+   * @returns An array of custom exclusion patterns.
    */
   getCustomExcludes(): string[] {
     // Placeholder implementation - returns empty array for now
