@@ -334,7 +334,7 @@ export class DucerCore {
       'semantic_registry.json',
     );
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
-      actions: Array<{ name: string; tags: string[] }>;
+      actions: Array<{ name: string; tags: string[]; id?: string }>;
     };
     const learnedDb = JSON.parse(
       fs.readFileSync(this.actionsDbPath, 'utf8'),
@@ -349,10 +349,18 @@ export class DucerCore {
       .filter((k) => k.includes(query.toLowerCase()))
       .map((k) => ({ name: `[learned] ${k}`, id: learnedDb[k] }));
 
-    const allResults = [...localResults, ...learnedResults];
+    const allResults: Array<{ name: string; id?: string }> = [
+      ...localResults,
+      ...learnedResults,
+    ];
 
     return allResults.length > 0
-      ? JSON.stringify(allResults.map((r) => ({ name: r.name, id: r.id })))
+      ? JSON.stringify(
+          allResults.map((r: { name: string; id?: string }) => ({
+            name: r.name,
+            id: r.id,
+          })),
+        )
       : 'No actions found in registry or learned database.';
   }
 

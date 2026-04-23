@@ -14,9 +14,10 @@ import {
   resolveSessionId,
 } from '../gemini.js';
 import { loadSettings } from '../config/settings.js';
-import { loadCliConfig } from '../config/config.js';
+import { loadCliConfig, type CliArgs } from '../config/config.js';
 import { exitCli } from './utils.js';
 import { validateNonInteractiveAuth } from '../validateNonInterActiveAuth.js';
+import { debugLogger } from '@google/gemini-cli-core';
 
 interface DucerArgs {
   subcommand?: string;
@@ -31,13 +32,17 @@ interface DucerArgs {
  */
 export const ducerCommand: CommandModule<object, DucerArgs> = {
   ...pluginDucerCommand,
-  builder: (yargs: Argv) =>
-    pluginDucerCommand.builder(yargs).middleware((argv: DucerArgs) => {
+  builder: (yargs: Argv<object>) => {
+    const builder = pluginDucerCommand.builder as (
+      yargs: Argv<object>,
+    ) => Argv<DucerArgs>;
+    return builder(yargs).middleware((argv: DucerArgs) => {
       initializeOutputListenersAndFlush();
       if (argv.subcommand) {
         argv['isCommand'] = true;
       }
-    }),
+    });
+  },
   handler: async (argv: DucerArgs) => {
     try {
       // 1. Cargamos configuración base
@@ -50,7 +55,7 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
       const config = await loadCliConfig(
         settings.merged,
         sessionId,
-        argv as Record<string, unknown>,
+        argv as unknown as CliArgs,
       );
 
       // 3. Autenticación
@@ -74,8 +79,7 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
       await exitCli();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      // eslint-disable-next-line no-console
-      console.error('Error en el comando ducer:', message);
+      debugLogger.error('Error en el comando ducer:', message);
       process.exit(1);
     }
   },

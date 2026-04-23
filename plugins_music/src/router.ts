@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { exec } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import type { Argv, CommandModule } from 'yargs';
 import { DucerCore } from './ducer_core.js';
 import { ReaperBridgeClient } from './reaper_bridge_client.js';
 import { generatePremiumHTML } from './ui_generator.js';
@@ -33,7 +34,7 @@ export async function handleDucerCommand(
   const bridge = new ReaperBridgeClient();
   const ducer = new DucerCore(bridge);
   const subcommand = argv.subcommand;
-  const filePath = argv.file;
+  const filePath = argv.file as string | undefined;
   const isAdvanced = argv.advanced || false;
   const isLite = argv.lite || false;
 
@@ -173,10 +174,10 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
   });
 }
 
-export const ducerCommand = {
+export const ducerCommand: CommandModule<object, DucerArgs> = {
   command: 'ducer [subcommand] [queryPositional]',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: Argv) => {
+  builder: (yargs: Argv<object>) => {
     return yargs
       .positional('subcommand', {
         type: 'string',
@@ -208,7 +209,7 @@ export const ducerCommand = {
         alias: 'q',
         type: 'string',
         describe: 'Consulta en lenguaje natural para el modo do',
-      });
+      }) as unknown as Argv<DucerArgs>;
   },
   handler: async () => {}, // Handled by the dispatcher
 };
