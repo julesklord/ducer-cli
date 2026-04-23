@@ -40,7 +40,9 @@ describe('createLogger', () => {
       get: mockGetConfigValue,
     }));
 
-    vi.mocked(vscode.workspace.getConfiguration).mockImplementation(mockGetConfiguration as (section?: string) => any);
+    vi.mocked(vscode.workspace.getConfiguration).mockImplementation(
+      mockGetConfiguration as (section?: string) => any,
+    );
   });
 
   afterEach(() => {

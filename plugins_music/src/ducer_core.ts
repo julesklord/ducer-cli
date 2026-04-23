@@ -300,7 +300,7 @@ export class DucerCore {
           'knowledge',
           'db',
           'semantic_registry.json',
-        ),
+          ),
         'utf8',
       ),
     );

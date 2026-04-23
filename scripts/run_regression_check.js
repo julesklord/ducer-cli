@@ -68,6 +68,7 @@ async function runTests(files, pattern, model, skipLock = false) {
       const child = spawn('npx', args, {
         stdio: 'inherit',
         env: { ...process.env, RUN_EVALS: '1', GEMINI_MODEL: model },
+        shell: true,
       });
       child.on('close', resolve);
       child.on('error', resolve);
