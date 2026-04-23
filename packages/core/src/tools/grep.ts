@@ -318,9 +318,8 @@ class GrepToolInvocation extends BaseToolInvocation<
    * @returns {Promise<boolean>} True if the command is available, false otherwise.
    */
   private async isCommandAvailable(command: string): Promise<boolean> {
-    const checkCommand = process.platform === 'win32' ? 'where' : 'command';
-    const checkArgs =
-      process.platform === 'win32' ? [command] : ['-v', command];
+    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
+    const checkArgs = [command];
     try {
       const sandboxManager = this.config.sandboxManager;
 
@@ -353,7 +352,7 @@ class GrepToolInvocation extends BaseToolInvocation<
         return await new Promise((resolve) => {
           const child = spawn(finalCommand, finalArgs, {
             stdio: 'ignore',
-            shell: true,
+            shell: false,
             env: finalEnv,
           });
           child.on('close', (code) => {
