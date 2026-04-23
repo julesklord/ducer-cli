@@ -47,11 +47,11 @@ export interface ResolvedSandboxPaths {
   /** Directories included globally across all commands in this sandbox session. */
   globalIncludes: string[];
   /** Paths explicitly allowed by the policy of the currently executing command. */
-  policyAllowed: string[];
+  policyAllowed: Array<string>;
   /** Paths granted temporary read access by the current command's dynamic permissions. */
-  policyRead: string[];
+  policyRead: Array<string>;
   /** Paths granted temporary write access by the current command's dynamic permissions. */
-  policyWrite: string[];
+  policyWrite: Array<string>;
   /** Auto-detected paths for git worktrees/submodules. */
   gitWorktree?: {
     /** The actual .git directory for this worktree. */

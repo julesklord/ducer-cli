@@ -128,7 +128,6 @@ export function handleAutoUpdate(
     '@latest',
     isNightly ? '@nightly' : `@${info.update.latest}`,
   );
-
   const updateProcess = spawnFn(updateCommand, {
     stdio: 'ignore',
     shell: true,

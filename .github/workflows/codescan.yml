@@ -35,6 +35,8 @@ jobs:
         steps:
             -   name: Checkout repository
                 uses: actions/checkout@v4
+                with:
+                  fetch-depth: 0
             -   uses: actions/setup-java@v4
                 with:
                     distribution: 'temurin'
@@ -46,10 +48,16 @@ jobs:
                         ~/.sonar
                     key: ${{ runner.os }}-sonar
                     restore-keys: ${{ runner.os }}-sonar
-            -   name: Run Analysis
-                uses: codescan-io/codescan-scanner-action@master
+            -   name: Setup Java 17
+                uses: actions/setup-java@v4
                 with:
-                    login: ${{ secrets.CODESCAN_AUTH_TOKEN }}
+                    distribution: 'temurin'
+                    java-version: '21'
+            -   name: Run Analysis
+                uses: codescan-io/codescan-scanner-action@2.0
+                env:
+                    SONAR_TOKEN: ${{ secrets.CODESCAN_AUTH_TOKEN }}
+                with:
                     organization: ${{ secrets.CODESCAN_ORGANIZATION_KEY }}
                     projectKey: ${{ secrets.CODESCAN_PROJECT_KEY }}
                     generateSarifFile: true
