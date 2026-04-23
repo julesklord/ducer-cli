@@ -35,7 +35,8 @@ jobs:
         steps:
             -   name: Checkout repository
                 uses: actions/checkout@v4
-            -   uses: actions/setup-java@v4
+            -   name: Setup Java 17
+                uses: actions/setup-java@v4
                 with:
                     distribution: 'temurin'
                     java-version: '17'
@@ -46,19 +47,17 @@ jobs:
                         ~/.sonar
                     key: ${{ runner.os }}-sonar
                     restore-keys: ${{ runner.os }}-sonar
-            -   name: Setup Java 17
-                uses: actions/setup-java@v4
-                with:
-                    distribution: 'temurin'
-                    java-version: '21'
             -   name: Run Analysis
-                uses: codescan-io/codescan-scanner-action@2.0
+                uses: codescan-io/codescan-scanner-action@v1.6
                 with:
                     login: ${{ secrets.CODESCAN_AUTH_TOKEN }}
                     organization: ${{ secrets.CODESCAN_ORGANIZATION_KEY }}
                     projectKey: ${{ secrets.CODESCAN_PROJECT_KEY }}
                     generateSarifFile: true
+                    args: >
+                        -Dsonar.scm.disabled=true
             -   name: Upload SARIF file
                 uses: github/codeql-action/upload-sarif@v4
+                if: always()
                 with:
                     sarif_file: codescan.sarif

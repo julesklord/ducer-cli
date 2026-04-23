@@ -12,6 +12,7 @@ import { DucerCore } from './ducer_core.js';
 import { ReaperBridgeClient } from './reaper_bridge_client.js';
 import { generatePremiumHTML } from './ui_generator.js';
 import { DAW_CONTROL_PROMPT } from './prompts.js';
+import type { Argv } from 'yargs';
 
 interface DucerArgs {
   subcommand?: string;
@@ -176,7 +177,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 export const ducerCommand = {
   command: 'ducer [subcommand] [queryPositional]',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: any) => {
+  builder: (yargs: Argv) => {
     return yargs
       .positional('subcommand', {
         type: 'string',
