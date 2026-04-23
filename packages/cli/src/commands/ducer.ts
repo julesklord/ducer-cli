@@ -6,19 +6,19 @@
 
 import type { CommandModule, Argv } from 'yargs';
 import { ducerCommand as pluginDucerCommand, handleDucerCommand } from '../../../../plugins_music/src/router.js';
-import { initializeOutputListenersAndFlush } from '../gemini.js';
+import { initializeOutputListenersAndFlush, resolveSessionId } from '../gemini.js';
 import { loadSettings } from '../config/settings.js';
 import { loadCliConfig } from '../config/config.js';
-import { resolveSessionId } from '../gemini.js';
 import { exitCli } from './utils.js';
 import { validateNonInteractiveAuth } from '../validateNonInterActiveAuth.js';
+import { debugLogger } from '@google/gemini-cli-core';
 
 interface DucerArgs {
   subcommand?: string;
   resume?: string;
   advanced?: boolean;
   lite?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -39,7 +39,7 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
     try {
       // 1. Cargamos configuración base
       const settings = loadSettings();
-      const { sessionId } = await resolveSessionId(argv['resume'] as string | undefined);
+      const { sessionId } = await resolveSessionId(argv.resume as string | undefined);
       
       // 2. Cargamos el Config completo
       const config = await loadCliConfig(settings.merged, sessionId, argv as any);
@@ -63,8 +63,9 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
 
       // 5. Salimos limpiamente
       await exitCli();
-    } catch (error: any) {
-      console.error('Error en el comando ducer:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      debugLogger.log('Error en el comando ducer: ' + errorMessage);
       process.exit(1);
     }
   }

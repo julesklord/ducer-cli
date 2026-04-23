@@ -49,11 +49,11 @@ export interface DucerConfig {
  * Encapsulates all domain logic to provide a portable, complex identity.
  */
 export class DucerCore {
-  private mediaHandler: MusicMediaHandler;
   private audioAnalyzer: AudioAnalyzer;
   private toolsManager: MusicToolsManager;
   private bridge: DawBridge;
   private scriptManager: ScriptManager;
+  private mediaHandler: MusicMediaHandler;
 
   private readonly actionsDbPath: string;
 
@@ -108,10 +108,10 @@ export class DucerCore {
     console.log(`[Ducer] Procesando consulta: "${query}"`);
 
     // Historial acumulado para mantener el contexto entre herramientas
-    const history: Array<{ role: string; parts: any[] }> = [];
+    const history: Array<{ role: string; parts: unknown[] }> = [];
     
     // El input inicial combina el sistema y la query
-    let currentInput: any[] = [{ text: systemPrompt + '\n\nUSER: ' + query }];
+    let currentInput: unknown[] = [{ text: systemPrompt + '\n\nUSER: ' + query }];
 
     let fullResponse = '';
     let continueLoop = true;
@@ -152,7 +152,7 @@ export class DucerCore {
 
       if (toolCallsThisTurn.length > 0) {
         continueLoop = true;
-        const toolResultParts: any[] = [];
+        const toolResultParts: unknown[] = [];
 
         for (const call of toolCallsThisTurn) {
           console.log(`\n[Ducer] Ejecutando: ${call.name}...`);
