@@ -5,6 +5,7 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Handles validation and preparation of media files (Audio/MIDI).
@@ -12,6 +13,7 @@ import fs from 'node:fs';
  */
 export class MusicMediaHandler {
   private readonly MAX_FILE_SIZE_MB = 10; // Default limit for the PoC
+  private readonly ALLOWED_EXTENSIONS = ['.wav', '.mp3', '.mid', '.midi', '.flac', '.ogg', '.m4a', '.aac', '.wma'];
 
   /**
    * Validates if a file is suitable for Gemini API submission.
@@ -31,7 +33,15 @@ export class MusicMediaHandler {
       };
     }
 
-    // TODO: Add format validation (wav, mp3, mid, etc.)
+    // Add format validation
+    const ext = path.extname(filePath).toLowerCase();
+    if (!this.ALLOWED_EXTENSIONS.includes(ext)) {
+      return {
+        valid: false,
+        error: `Unsupported file format (${ext}). Allowed formats: ${this.ALLOWED_EXTENSIONS.join(', ')}`,
+      };
+    }
+
     return { valid: true };
   }
 }
