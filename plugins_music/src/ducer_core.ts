@@ -108,10 +108,13 @@ export class DucerCore {
     console.log(`[Ducer] Procesando consulta: "${query}"`);
 
     // Historial acumulado para mantener el contexto entre herramientas
-    const history: Array<{ role: string; parts: any[] }> = [];
-    
+    const history: Array<{ role: string; parts: Array<Record<string, unknown>> }> =
+      [];
+
     // El input inicial combina el sistema y la query
-    let currentInput: any[] = [{ text: systemPrompt + '\n\nUSER: ' + query }];
+    let currentInput: Array<Record<string, unknown>> = [
+      { text: systemPrompt + '\n\nUSER: ' + query },
+    ];
 
     let fullResponse = '';
     let continueLoop = true;
@@ -136,29 +139,34 @@ export class DucerCore {
 
       for await (const event of responseStream) {
         if (event.type === 'content') {
-          process.stdout.write(event.value);
-          fullResponse += event.value;
-          assistantTextThisTurn += event.value;
+          process.stdout.write(event.value as string);
+          fullResponse += event.value as string;
+          assistantTextThisTurn += event.value as string;
         }
         if (event.type === 'tool-call') {
-          toolCallsThisTurn.push(event.value);
+          toolCallsThisTurn.push(event.value as { name: string; args: string });
         }
       }
 
       if (assistantTextThisTurn) {
         history.push({ role: 'user', parts: currentInput });
-        history.push({ role: 'assistant', parts: [{ text: assistantTextThisTurn }] });
+        history.push({
+          role: 'assistant',
+          parts: [{ text: assistantTextThisTurn }],
+        });
       }
 
       if (toolCallsThisTurn.length > 0) {
         continueLoop = true;
-        const toolResultParts: any[] = [];
+        const toolResultParts: Array<Record<string, unknown>> = [];
 
         for (const call of toolCallsThisTurn) {
           console.log(`\n[Ducer] Ejecutando: ${call.name}...`);
           const result = await this.dispatchTool(call);
           console.log(`[Ducer] Resultado de ${call.name} obtenido.`);
-          toolResultParts.push({ text: `[RESULTADO TOOL ${call.name}]: ${result}` });
+          toolResultParts.push({
+            text: `[RESULTADO TOOL ${call.name}]: ${result}`,
+          });
         }
 
         // El siguiente input para la IA son los resultados de las herramientas
@@ -181,7 +189,7 @@ export class DucerCore {
   }): Promise<string> {
     let args: Record<string, unknown>;
     try {
-      args = JSON.parse(call.args);
+      args = JSON.parse(call.args) as Record<string, unknown>;
     } catch (parseError) {
       const errorMsg =
         parseError instanceof Error ? parseError.message : String(parseError);
@@ -283,7 +291,7 @@ export class DucerCore {
           ),
           'utf8',
         ),
-      );
+      ) as { actions: Array<{ id: string }> };
       return registry.actions.some((a: { id: string }) => a.id === id);
     } catch {
       return false;
@@ -303,7 +311,7 @@ export class DucerCore {
         ),
         'utf8',
       ),
-    );
+    ) as { actions: Array<{ tags: string[]; name: string; id: string }> };
     const matches = registry.actions.filter(
       (a: { tags: string[]; name: string; id: string }) =>
         a.tags.some((t: string) => query.toLowerCase().includes(t)) ||
@@ -325,9 +333,12 @@ export class DucerCore {
       'db',
       'semantic_registry.json',
     );
-    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-    const learnedDb = JSON.parse(fs.readFileSync(this.actionsDbPath, 'utf8'));
-
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as {
+      actions: Array<{ name: string; tags: string[] }>;
+    };
+    const learnedDb = JSON.parse(
+      fs.readFileSync(this.actionsDbPath, 'utf8'),
+    ) as Record<string, string>;
     const localResults = registry.actions.filter(
       (a: { name: string; tags: string[] }) =>
         a.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -336,7 +347,7 @@ export class DucerCore {
 
     const learnedResults = Object.keys(learnedDb)
       .filter((k) => k.includes(query.toLowerCase()))
-      .map((k) => ({ name: `[learned] ${k}`, id: learnedDb[k] as string }));
+      .map((k) => ({ name: `[learned] ${k}`, id: learnedDb[k] }));
 
     const allResults = [...localResults, ...learnedResults];
 
@@ -347,7 +358,9 @@ export class DucerCore {
 
   private resolveActionId(idOrName: string): string {
     try {
-      const db = JSON.parse(fs.readFileSync(this.actionsDbPath, 'utf8'));
+      const db = JSON.parse(
+        fs.readFileSync(this.actionsDbPath, 'utf8'),
+      ) as Record<string, string>;
       return db[idOrName.toLowerCase()] || idOrName;
     } catch {
       return idOrName;
@@ -355,7 +368,9 @@ export class DucerCore {
   }
 
   private async learnMacro(name: string, id: string): Promise<string> {
-    const db = JSON.parse(fs.readFileSync(this.actionsDbPath, 'utf8'));
+    const db = JSON.parse(
+      fs.readFileSync(this.actionsDbPath, 'utf8'),
+    ) as Record<string, string>;
     db[name.toLowerCase()] = id;
     fs.writeFileSync(this.actionsDbPath, JSON.stringify(db, null, 2));
     return `✅ Ducer has learned the macro: "${name}" -> ${id}`;
@@ -419,16 +434,20 @@ Proporciona:
     let continueLoop = true;
 
     // Historial para loop multi-turn si hay tool-calls
-    const history: Array<{ role: string; parts: unknown[] }> = [
-      { role: 'user', parts: multimodalMessage },
-    ];
+    const history: Array<{ role: string; parts: Array<Record<string, unknown>> }> =
+      [
+        {
+          role: 'user',
+          parts: multimodalMessage as Array<Record<string, unknown>>,
+        },
+      ];
 
     while (continueLoop) {
       continueLoop = false;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const responseStream = (geminiClient as any).sendMessageStream(
-        history[history.length - 1].parts as unknown[],
+        history[history.length - 1].parts,
         new AbortController().signal,
         sessionId,
         toolDeclarations,
@@ -441,12 +460,12 @@ Proporciona:
 
       for await (const event of responseStream) {
         if (event.type === 'content') {
-          process.stdout.write(event.value);
-          fullResponse += event.value;
-          assistantTextThisTurn += event.value;
+          process.stdout.write(event.value as string);
+          fullResponse += event.value as string;
+          assistantTextThisTurn += event.value as string;
         }
         if (event.type === 'tool-call') {
-          toolCallsThisTurn.push(event.value);
+          toolCallsThisTurn.push(event.value as { name: string; args: string });
         }
       }
 
@@ -459,13 +478,13 @@ Proporciona:
 
       if (toolCallsThisTurn.length > 0) {
         continueLoop = true;
-        const toolResultParts: unknown[] = [];
+        const toolResultParts: Array<Record<string, unknown>> = [];
 
         for (const call of toolCallsThisTurn) {
           // Inyectar el filePath en los args de las tools que lo necesitan
           let callArgs: Record<string, unknown> = {};
           try {
-            callArgs = JSON.parse(call.args);
+            callArgs = JSON.parse(call.args) as Record<string, unknown>;
           } catch {
             /* usar vacío */
           }

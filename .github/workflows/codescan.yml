@@ -46,13 +46,9 @@ jobs:
                         ~/.sonar
                     key: ${{ runner.os }}-sonar
                     restore-keys: ${{ runner.os }}-sonar
-            -   name: Setup Java 17
-                uses: actions/setup-java@v4
-                with:
-                    distribution: 'temurin'
-                    java-version: '21'
             -   name: Run Analysis
-                uses: codescan-io/codescan-scanner-action@2.0
+                # Pin to @master to avoid UnsupportedClassVersionError, as recommended in project guidelines.
+                uses: codescan-io/codescan-scanner-action@master
                 with:
                     login: ${{ secrets.CODESCAN_AUTH_TOKEN }}
                     organization: ${{ secrets.CODESCAN_ORGANIZATION_KEY }}
