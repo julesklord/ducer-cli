@@ -654,7 +654,6 @@ export async function loadServerHierarchicalMemory(
   maxDirs: number = 200,
   boundaryMarkers: readonly string[] = ['.git'],
 ): Promise<LoadServerHierarchicalMemoryResponse> {
-  // FIX: Use real, canonical paths for a reliable comparison to handle symlinks.
   const realCwd = normalizePath(resolveToRealPath(currentWorkingDirectory));
   const realHome = normalizePath(resolveToRealPath(homedir()));
   const isHomeDirectory = realCwd === realHome;

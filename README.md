@@ -18,7 +18,7 @@ The `main` branch tracks Google's upstream verbatim. The `ducer` branch is where
 
 ## How it works
 
-```
+```typescript
 User Prompt
     │
     ▼
@@ -140,7 +140,7 @@ A persistent IPC loop that watches `ducer_commands.txt` every 200ms. Intended fo
 
 ## Plugin structure
 
-```
+```typescript
 plugins_music/
 ├── src/
 │   ├── bridge_interface.ts     # Universal DawBridge contract
@@ -183,6 +183,7 @@ reactions_db/                   # Session reaction/feedback persistence
 | `ducer` | Production layer. All Ducer-specific code lives here. |
 
 Upstream sync workflow:
+
 ```bash
 git fetch upstream
 git checkout main && git merge upstream/main

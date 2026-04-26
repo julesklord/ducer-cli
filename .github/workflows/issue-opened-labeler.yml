@@ -12,7 +12,7 @@ jobs:
       issues: write
     runs-on: 'ubuntu-latest'
     if: |-
-      ${{ github.repository == 'google-gemini/gemini-cli' || github.repository == 'google-gemini/maintainers-gemini-cli' }}
+      ${{ github.repository == 'julesklord/ducer-cli' }}
     steps:
       - name: 'Generate GitHub App Token'
         id: 'generate_token'
