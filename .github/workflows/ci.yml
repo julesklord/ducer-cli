@@ -104,6 +104,12 @@ jobs:
       - name: 'Run yamllint'
         run: 'node scripts/lint.js --yamllint'
 
+      - name: 'Build project for typecheck'
+        run: 'npm run build'
+
+      - name: 'Run typecheck'
+        run: 'npm run typecheck'
+
       - name: 'Run Prettier'
         run: 'node scripts/lint.js --prettier'
 
@@ -175,6 +181,7 @@ jobs:
       - name: 'Run tests and generate reports'
         env:
           NO_COLOR: true
+          GEMINI_CLI_TRUST_WORKSPACE: true
         run: |
           if [[ "${{ matrix.shard }}" == "cli" ]]; then
             npm run test:ci --workspace "@google/gemini-cli"
@@ -226,7 +233,7 @@ jobs:
 
   test_mac:
     name: 'Test (Mac) - ${{ matrix.node-version }}, ${{ matrix.shard }}'
-    runs-on: 'macos-latest'
+    runs-on: 'macos-latest-large'
     needs:
       - 'merge_queue_skipper'
     if: "github.repository == 'julesklord/ducer-cli' && needs.merge_queue_skipper.outputs.skip == 'false'"
@@ -263,6 +270,7 @@ jobs:
       - name: 'Run tests and generate reports'
         env:
           NO_COLOR: true
+          GEMINI_CLI_TRUST_WORKSPACE: true
         run: |
           if [[ "${{ matrix.shard }}" == "cli" ]]; then
             npm run test:ci --workspace "@google/gemini-cli" -- --coverage.enabled=false
@@ -426,6 +434,7 @@ jobs:
         env:
           GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
           NO_COLOR: true
+          GEMINI_CLI_TRUST_WORKSPACE: true
           NODE_OPTIONS: '--max-old-space-size=32768 --max-semi-space-size=256'
           UV_THREADPOOL_SIZE: '32'
           NODE_ENV: 'test'

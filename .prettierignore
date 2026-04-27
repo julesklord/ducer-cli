@@ -25,3 +25,4 @@ packages/sdk/test-data/*.json
 scripts/
 ducer-skills/
 plugins_music/reaper_scripts/
+*.mdx
