@@ -10,9 +10,21 @@ import { exec } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import type { Argv } from 'yargs';
 import { DucerCore } from './ducer_core.js';
-import { ReaperBridgeClient } from './reaper_bridge_client.js';
+import {
+  ReaperBridgeClient,
+  getReaperScriptsDir,
+} from './reaper_bridge_client.js';
 import { generatePremiumHTML } from './ui_generator.js';
 import { DAW_CONTROL_PROMPT } from './prompts.js';
+
+/**
+ * Performs an atomic write by writing to a temporary file and then renaming it.
+ */
+function atomicWriteSync(filePath: string, content: string): void {
+  const tempPath = filePath + '.tmp';
+  fs.writeFileSync(tempPath, content);
+  fs.renameSync(tempPath, filePath);
+}
 
 interface DucerArgs {
   subcommand?: string;
@@ -102,29 +114,25 @@ async function runServiceLoop(
     `\n[Ducer] Service Mode Active. Listening for REAPER commands...`,
   );
 
-  const REAPER_SCRIPTS_DIR = path.join(
-    process.env['APPDATA'] || '',
-    'REAPER',
-    'Scripts',
-  );
-  const SERVICE_CMD_FILE = path.join(REAPER_SCRIPTS_DIR, 'ducer_commands.txt');
-  const SERVICE_RESP_FILE = path.join(REAPER_SCRIPTS_DIR, 'ducer_response.txt');
+  const scriptsDir = getReaperScriptsDir();
+  const SERVICE_CMD_FILE = path.join(scriptsDir, 'ducer_commands.txt');
+  const SERVICE_RESP_FILE = path.join(scriptsDir, 'ducer_response.txt');
 
-  if (fs.existsSync(SERVICE_RESP_FILE)) fs.writeFileSync(SERVICE_RESP_FILE, '');
+  if (fs.existsSync(SERVICE_RESP_FILE)) atomicWriteSync(SERVICE_RESP_FILE, '');
 
   while (true) {
     if (fs.existsSync(SERVICE_CMD_FILE)) {
       const cmd = fs.readFileSync(SERVICE_CMD_FILE, 'utf8').trim();
       if (cmd !== '') {
-        fs.writeFileSync(SERVICE_CMD_FILE, '');
+        atomicWriteSync(SERVICE_CMD_FILE, '');
         console.log(`\n[Ducer Service] Incoming Command: ${cmd}`);
 
         try {
           const response = await ducer.getInsight(cmd, context, config);
-          fs.writeFileSync(SERVICE_RESP_FILE, response);
+          atomicWriteSync(SERVICE_RESP_FILE, response);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          fs.writeFileSync(SERVICE_RESP_FILE, `Error: ${msg}`);
+          atomicWriteSync(SERVICE_RESP_FILE, `Error: ${msg}`);
         }
       }
     }

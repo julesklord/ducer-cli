@@ -20,7 +20,7 @@ import type {
  * macOS: ~/Library/Application Support/REAPER/Scripts
  * Linux: ~/.config/REAPER/Scripts
  */
-function getReaperScriptsDir(): string {
+export function getReaperScriptsDir(): string {
   const platform = os.platform();
 
   if (platform === 'win32') {
@@ -76,6 +76,16 @@ export class ReaperBridgeClient implements DawBridge {
    */
   public isBridgeAvailable(): boolean {
     return fs.existsSync(ReaperBridgeClient.REAPER_SCRIPTS_DIR);
+  }
+
+  /**
+   * Performs an atomic write by writing to a temporary file and then renaming it.
+   * This prevents race conditions where another process might read a partially written file.
+   */
+  private static atomicWriteSync(filePath: string, content: string): void {
+    const tempPath = filePath + '.tmp';
+    fs.writeFileSync(tempPath, content);
+    fs.renameSync(tempPath, filePath);
   }
 
   /**
@@ -175,8 +185,8 @@ export class ReaperBridgeClient implements DawBridge {
       );
     }
 
-    // Write command
-    fs.writeFileSync(ReaperBridgeClient.CMD_FILE, command);
+    // Write command atomically
+    ReaperBridgeClient.atomicWriteSync(ReaperBridgeClient.CMD_FILE, command);
 
     // Poll for response
     return this.pollResponse();
@@ -254,8 +264,8 @@ export class ReaperBridgeClient implements DawBridge {
           .readFileSync(ReaperBridgeClient.RESP_FILE, 'utf8')
           .trim();
         if (content !== '') {
-          // Clear response file
-          fs.writeFileSync(ReaperBridgeClient.RESP_FILE, '');
+          // Clear response file atomically
+          ReaperBridgeClient.atomicWriteSync(ReaperBridgeClient.RESP_FILE, '');
           return content;
         }
       }
