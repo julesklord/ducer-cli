@@ -498,4 +498,58 @@ Proporciona:
 
     return fullResponse;
   }
+
+  /**
+   * Refactor A.2: Batch Processing for multiple files.
+   */
+  async analyzeMultiple(
+    filePaths: string[],
+    mode: 'standard' | 'advanced' | 'lite',
+    config: DucerConfig,
+  ): Promise<{
+    results: Array<{ file: string; response: string; success: boolean }>;
+    summary: string;
+    totalDurationSeconds: number;
+  }> {
+    const startTime = Date.now();
+    const results: Array<{ file: string; response: string; success: boolean }> =
+      [];
+
+    console.log(
+      `\n[Ducer] Iniciando procesamiento por lotes de ${filePaths.length} archivos...`,
+    );
+
+    // Usamos allSettled para que un fallo individual no detenga todo el lote
+    const tasks = filePaths.map(async (filePath) => {
+      try {
+        const response = await this.analyzeFile(filePath, mode, config);
+        return { file: filePath, response, success: true };
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        return { file: filePath, response: `Error: ${msg}`, success: false };
+      }
+    });
+
+    const settledResults = await Promise.allSettled(tasks);
+
+    for (const res of settledResults) {
+      if (res.status === 'fulfilled') {
+        results.push(res.value);
+      } else {
+        // Esto no debería pasar con el try/catch interno pero por seguridad
+        results.push({
+          file: 'Unknown',
+          response: `Fatal error in task`,
+          success: false,
+        });
+      }
+    }
+
+    const duration = (Date.now() - startTime) / 1000;
+    const successCount = results.filter((r) => r.success).length;
+    const summary = `${successCount}/${filePaths.length} archivos analizados correctamente en ${duration.toFixed(1)}s.`;
+
+    console.log(`\n[Ducer] Batch Summary: ${summary}`);
+    return { results, summary, totalDurationSeconds: duration };
+  }
 }

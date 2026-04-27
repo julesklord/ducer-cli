@@ -46,35 +46,56 @@ export async function handleDucerCommand(
   const bridge = new ReaperBridgeClient();
   const ducer = new DucerCore(bridge);
   const subcommand = argv.subcommand;
-  const filePath = argv.file;
+  const filePaths = Array.isArray(argv.file)
+    ? (argv.file as string[])
+    : argv.file
+      ? [argv.file as string]
+      : [];
   const isAdvanced = argv.advanced || false;
   const isLite = argv.lite || false;
 
   console.log(`\n[DUCER] Producer Intelligence active.`);
 
   if (subcommand === 'analyze') {
-    if (!filePath) {
+    if (filePaths.length === 0) {
       console.error(
-        'Error: Debes proporcionar una ruta de archivo con --file [ruta]',
+        'Error: Debes proporcionar al menos una ruta de archivo con --file [ruta]',
       );
       return;
     }
 
-    if (!fs.existsSync(filePath)) {
-      console.error(`Error: El archivo no existe en la ruta: ${filePath}`);
+    const missingFiles = filePaths.filter((p) => !fs.existsSync(p));
+    if (missingFiles.length > 0) {
+      console.error(
+        `Error: Los siguientes archivos no existen: ${missingFiles.join(', ')}`,
+      );
       return;
     }
 
     const mode = isAdvanced ? 'advanced' : isLite ? 'lite' : 'standard';
-    console.log(
-      `[Ducer] Iniciando auditoría experta (${mode}): ${path.basename(filePath)}...`,
-    );
 
     try {
-      const fullResponse = await ducer.analyzeFile(filePath, mode, config);
+      if (filePaths.length > 1) {
+        const batchResults = await ducer.analyzeMultiple(
+          filePaths,
+          mode,
+          config,
+        );
+        if (isAdvanced) {
+          for (const res of batchResults.results) {
+            if (res.success) await handleAdvancedArtifacts(res.response, res.file);
+          }
+        }
+      } else {
+        const filePath = filePaths[0];
+        console.log(
+          `[Ducer] Iniciando auditoría experta (${mode}): ${path.basename(filePath)}...`,
+        );
+        const fullResponse = await ducer.analyzeFile(filePath, mode, config);
 
-      if (isAdvanced) {
-        await handleAdvancedArtifacts(fullResponse, filePath);
+        if (isAdvanced) {
+          await handleAdvancedArtifacts(fullResponse, filePath);
+        }
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -203,8 +224,8 @@ export const ducerCommand = {
       })
       .option('file', {
         alias: 'f',
-        type: 'string',
-        describe: 'Ruta al archivo de audio/MIDI a procesar',
+        type: 'array',
+        describe: 'Ruta al archivo o archivos de audio/MIDI a procesar',
       })
       .option('advanced', {
         alias: 'a',
