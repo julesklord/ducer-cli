@@ -254,7 +254,8 @@ export class LocalSubagentInvocation extends BaseToolInvocation<
                   ? sanitizedError
                   : `Error: ${sanitizedError}`,
               status: isCancellation || isRejection ? 'cancelled' : 'error',
-            });
+              stack: activity.data['stack'] as string | undefined,
+            } as any); // cast to any to avoid type error if stack is not in type yet
             updated = true;
             break;
           }

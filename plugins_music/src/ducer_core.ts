@@ -108,10 +108,12 @@ export class DucerCore {
     console.log(`[Ducer] Procesando consulta: "${query}"`);
 
     // Historial acumulado para mantener el contexto entre herramientas
-    const history: Array<{ role: string; parts: any[] }> = [];
+    const history: Array<{ role: string; parts: unknown[] }> = [];
     
     // El input inicial combina el sistema y la query
-    let currentInput: any[] = [{ text: systemPrompt + '\n\nUSER: ' + query }];
+    let currentInput: unknown[] = [
+      { text: systemPrompt + '\n\nUSER: ' + query },
+    ];
 
     let fullResponse = '';
     let continueLoop = true;
@@ -152,7 +154,7 @@ export class DucerCore {
 
       if (toolCallsThisTurn.length > 0) {
         continueLoop = true;
-        const toolResultParts: any[] = [];
+        const toolResultParts: unknown[] = [];
 
         for (const call of toolCallsThisTurn) {
           console.log(`\n[Ducer] Ejecutando: ${call.name}...`);
@@ -209,7 +211,11 @@ export class DucerCore {
           );
 
         case 'execute_reaper_action': {
-          const idToExecute = this.resolveActionId(args['action_id'] as string);
+          const actionIdRaw = args['action_id'];
+          if (!actionIdRaw || typeof actionIdRaw !== 'string') {
+            return 'Error: Missing or invalid action_id. Expected a string.';
+          }
+          const idToExecute = this.resolveActionId(actionIdRaw);
 
           // Anti-Hallucination: Verify if NOT in our local registry
           if (!this.isInRegistry(idToExecute)) {
@@ -346,10 +352,15 @@ export class DucerCore {
   }
 
   private resolveActionId(idOrName: string): string {
+    if (!idOrName) return '';
     try {
+      if (!fs.existsSync(this.actionsDbPath)) return idOrName;
       const db = JSON.parse(fs.readFileSync(this.actionsDbPath, 'utf8'));
       return db[idOrName.toLowerCase()] || idOrName;
-    } catch {
+    } catch (error: unknown) {
+      console.warn(
+        `[DucerCore] Failed to resolve action ID: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return idOrName;
     }
   }

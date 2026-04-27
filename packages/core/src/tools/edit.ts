@@ -446,6 +446,7 @@ class EditToolInvocation
   implements ToolInvocation<EditToolParams, ToolResult>
 {
   private readonly resolvedPath: string;
+  private lastReadHash: string | undefined;
 
   constructor(
     private readonly config: Config,
@@ -624,6 +625,7 @@ class EditToolInvocation
       currentContent = await this.config
         .getFileSystemService()
         .readTextFile(this.resolvedPath);
+      this.lastReadHash = hashContent(currentContent.replace(/\r\n/g, '\n'));
       originalLineEnding = detectLineEnding(currentContent);
       currentContent = currentContent.replace(/\r\n/g, '\n');
       fileExists = true;
@@ -794,10 +796,10 @@ class EditToolInvocation
         if (ideConfirmation) {
           const result = await ideConfirmation;
           if (result.status === 'accepted' && result.content) {
-            // TODO(chrstn): See https://github.com/google-gemini/gemini-cli/pull/5618#discussion_r2255413084
-            // for info on a possible race condition where the file is modified on disk while being edited.
             this.params.old_string = editData.currentContent ?? '';
             this.params.new_string = result.content;
+            // Update lastReadHash to match the content we just accepted from the IDE
+            this.lastReadHash = hashContent(result.content.replace(/\r\n/g, '\n'));
           }
         }
       },
@@ -849,6 +851,24 @@ class EditToolInvocation
     let editData: CalculatedEdit;
     try {
       editData = await this.calculateEdit(this.params, signal);
+
+      // Verify if the file has changed on disk since the last read (e.g. while waiting for confirmation)
+      if (this.lastReadHash && !editData.isNewFile) {
+        const freshContent = await this.config
+          .getFileSystemService()
+          .readTextFile(this.resolvedPath);
+        const freshHash = hashContent(freshContent.replace(/\r\n/g, '\n'));
+        if (freshHash !== this.lastReadHash) {
+          return {
+            llmContent: `Error executing edit: The file "${this.resolvedPath}" was modified by another process while waiting for execution. Please read the file again to get the latest content and retry your edit.`,
+            returnDisplay: `Error: File modified externally during confirmation.`,
+            error: {
+              message: `File modified externally.`,
+              type: ToolErrorType.EDIT_PREPARATION_FAILURE,
+            },
+          };
+        }
+      }
     } catch (error) {
       if (signal.aborted) {
         throw error;

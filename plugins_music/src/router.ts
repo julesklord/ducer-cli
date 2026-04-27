@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { exec } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import type { Argv } from 'yargs';
 import { DucerCore } from './ducer_core.js';
 import { ReaperBridgeClient } from './reaper_bridge_client.js';
 import { generatePremiumHTML } from './ui_generator.js';
@@ -44,6 +45,11 @@ export async function handleDucerCommand(
       console.error(
         'Error: Debes proporcionar una ruta de archivo con --file [ruta]',
       );
+      return;
+    }
+
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: El archivo no existe en la ruta: ${filePath}`);
       return;
     }
 
@@ -176,7 +182,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 export const ducerCommand = {
   command: 'ducer [subcommand] [queryPositional]',
   describe: 'Ducer Production Layer (Audio/MIDI analysis and generation)',
-  builder: (yargs: any) => {
+  builder: (yargs: Argv) => {
     return yargs
       .positional('subcommand', {
         type: 'string',

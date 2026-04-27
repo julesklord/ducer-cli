@@ -1111,8 +1111,9 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
           const invocation = tool.build(args);
           description = invocation.getDescription();
         }
-      } catch {
-        // Ignore errors during formatting for activity emission
+      } catch (error: unknown) {
+        // Ignore errors during formatting for activity emission, but log them for debugging
+        debugLogger.debug(`[LocalAgentExecutor] Error building tool invocation for activity emission: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       this.emitActivity('TOOL_CALL_START', {
@@ -1209,6 +1210,7 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
             name: toolName,
             callId: call.request.callId,
             error: call.response.error?.message || 'Unknown error',
+            stack: call.response.error?.stack,
             errorType: SubagentActivityErrorType.GENERIC,
           });
         } else if (call.status === 'cancelled') {

@@ -11,8 +11,6 @@ import type { FileDiscoveryService } from '../services/fileDiscoveryService.js';
 import type { FileFilteringOptions } from '../config/constants.js';
 import { debugLogger } from './debugLogger.js';
 import { getErrorMessage } from './errors.js';
-// Simple console logger for now.
-// TODO: Integrate with a more robust server-side logger.
 const logger = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debug: (...args: any[]) =>

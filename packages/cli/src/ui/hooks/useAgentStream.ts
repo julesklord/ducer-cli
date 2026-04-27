@@ -312,10 +312,70 @@ export const useAgentStream = ({
     ],
   );
 
+  const eventBufferRef = useRef<AgentEvent[]>([]);
+  const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const processBuffer = useCallback(() => {
+    const buffer = eventBufferRef.current;
+    eventBufferRef.current = [];
+    throttleTimeoutRef.current = null;
+
+    if (buffer.length === 0) return;
+
+    // We only want to throttle tool_update events.
+    // Other events like tool_request or agent_end should be processed immediately
+    // or at least at the end of the buffer.
+
+    // Group updates by requestId to only apply the latest one in the batch
+    const latestUpdates = new Map<string, AgentEvent>();
+    const immediateEvents: AgentEvent[] = [];
+
+    for (const event of buffer) {
+      if (event.type === 'tool_update') {
+        latestUpdates.set(event.requestId, event);
+      } else {
+        immediateEvents.push(event);
+      }
+    }
+
+    // Process immediate events
+    for (const event of immediateEvents) {
+      handleEvent(event);
+    }
+
+    // Process latest updates
+    for (const event of latestUpdates.values()) {
+      handleEvent(event);
+    }
+  }, [handleEvent]);
+
+  const throttledHandleEvent = useCallback(
+    (event: AgentEvent) => {
+      if (event.type === 'tool_update') {
+        eventBufferRef.current.push(event);
+        if (!throttleTimeoutRef.current) {
+          throttleTimeoutRef.current = setTimeout(processBuffer, 100);
+        }
+      } else {
+        // For non-throttled events, flush the buffer first to maintain order
+        if (eventBufferRef.current.length > 0) {
+          processBuffer();
+        }
+        handleEvent(event);
+      }
+    },
+    [handleEvent, processBuffer],
+  );
+
   useEffect(() => {
-    const unsubscribe = agent?.subscribe(handleEvent);
-    return () => unsubscribe?.();
-  }, [agent, handleEvent]);
+    const unsubscribe = agent?.subscribe(throttledHandleEvent);
+    return () => {
+      unsubscribe?.();
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+      }
+    };
+  }, [agent, throttledHandleEvent]);
 
   const submitQuery = useCallback(
     async (

@@ -94,6 +94,7 @@ export interface SubagentActivityItem {
   description?: string;
   args?: string;
   status: 'running' | 'completed' | 'error' | 'cancelled';
+  stack?: string;
 }
 
 export interface SubagentProgress {

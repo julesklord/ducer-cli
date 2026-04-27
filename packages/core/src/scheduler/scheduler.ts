@@ -389,7 +389,7 @@ export class Scheduler {
             schedulerId: this.schedulerId,
             approvalMode,
           };
-        } catch (e) {
+        } catch (e: unknown) {
           return {
             status: CoreToolCallStatus.Error,
             request,
@@ -445,12 +445,24 @@ export class Scheduler {
         return true;
       }
 
-      // If the first tool is parallelizable, batch all contiguous parallelizable tools.
+      // If the first tool is parallelizable, batch all contiguous parallelizable tools
+      // that do not have resource conflicts with each other.
       if (this._isParallelizable(next.request)) {
+        const batch: ToolCall[] = [next];
         while (this.state.queueLength > 0) {
           const peeked = this.state.peekQueue();
           if (peeked && this._isParallelizable(peeked.request)) {
-            this.state.dequeue();
+            // Check for resource conflicts with already batched tools
+            const hasConflict = batch.some((batchedCall) =>
+              this._hasResourceConflict(batchedCall as any, peeked as any),
+            );
+
+            if (!hasConflict) {
+              this.state.dequeue();
+              batch.push(peeked);
+            } else {
+              break;
+            }
           } else {
             break;
           }
@@ -546,17 +558,51 @@ export class Scheduler {
     return true;
   }
 
+  private _hasResourceConflict(callA: any, callB: any): boolean {
+    if (
+      callA.status === CoreToolCallStatus.Error ||
+      callB.status === CoreToolCallStatus.Error
+    ) {
+      return false;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const invocationA = (callA as any).invocation;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const invocationB = (callB as any).invocation;
+
+    if (!invocationA || !invocationB) {
+      return false;
+    }
+
+    const locsA = invocationA.toolLocations();
+    const locsB = invocationB.toolLocations();
+
+    for (const lA of locsA) {
+      for (const lB of locsB) {
+        if (lA.path === lB.path) {
+          // Conflict if at least one is NOT read-only
+          if (!lA.readOnly || !lB.readOnly) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   private async _processValidatingCall(
     active: ValidatingToolCall,
     signal: AbortSignal,
   ): Promise<void> {
     try {
       await this._processToolCall(active, signal);
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       // If the signal aborted while we were waiting on something, treat as
       // cancelled. Otherwise, it's a genuine unhandled system exception.
-      if (signal.aborted || err.name === 'AbortError') {
+      if (signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
         this.state.updateStatus(
           active.request.callId,
           CoreToolCallStatus.Cancelled,
