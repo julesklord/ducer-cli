@@ -54,6 +54,17 @@ async function executeDucerTask(taskId, query) {
     ducerProcess.stdout?.on('data', (data) => {
       const text = data.toString();
       stdout += text;
+
+      // Real-time progress detection for UVR
+      const progressMatch = text.match(/PROGRESS: (\d+)%/);
+      if (progressMatch) {
+        io.emit('task_progress', {
+          task_id: taskId,
+          progress: parseInt(progressMatch[1], 10),
+          message: text.trim(),
+        });
+      }
+
       io.emit('task_output', {
         task_id: taskId,
         type: 'stdout',
@@ -231,6 +242,62 @@ app.post('/api/tasks/custom', async (req, res) => {
   executeDucerTask(taskId, query);
 });
 
+app.post('/api/tasks/setup-uvr', async (req, res) => {
+  const taskId = uuid();
+
+  sessions.set(taskId, {
+    id: taskId,
+    type: 'setup-uvr',
+    status: 'running',
+    startTime: Date.now(),
+    timestamp: new Date().toISOString(),
+  });
+
+  res.json({ task_id: taskId, status: 'started' });
+
+  const setupProcess = spawn('node', [
+    path.join(process.cwd(), '../scripts/setup-uvr.js'),
+  ]);
+
+  setupProcess.stdout?.on('data', (data) => {
+    const text = data.toString();
+    io.emit('task_output', {
+      task_id: taskId,
+      type: 'stdout',
+      data: text,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  setupProcess.stderr?.on('data', (data) => {
+    const text = data.toString();
+    io.emit('task_output', {
+      task_id: taskId,
+      type: 'stderr',
+      data: text,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  setupProcess.on('close', (code) => {
+    const task = sessions.get(taskId);
+    const result = {
+      ...task,
+      status: code === 0 ? 'success' : 'failed',
+      duration_ms: Date.now() - task.startTime,
+      exit_code: code,
+      timestamp: new Date().toISOString(),
+    };
+    sessions.set(taskId, result);
+    taskHistory.unshift(result);
+    io.emit('task_complete', {
+      task_id: taskId,
+      success: code === 0,
+      duration_ms: result.duration_ms,
+    });
+  });
+});
+
 app.get('/api/tasks/history', (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   res.json(taskHistory.slice(0, limit));
@@ -294,7 +361,7 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════╗`);
   console.log(`║  DUCER WEB CONTROLLER RUNNING      ║`);
-  console.log(`║  http://localhost:${PORT}              ║`);
+  console.log(`║  http://localhost:${PORT}            ║`);
   console.log(`╚════════════════════════════════════╝\n`);
 });
 
