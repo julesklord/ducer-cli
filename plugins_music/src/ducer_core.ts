@@ -16,6 +16,7 @@ import {
   DAW_CONTROL_PROMPT,
   ADVANCED_ANALYSIS_ADDON,
   LITE_ANALYSIS_ADDON,
+  AGENTIC_MODE_PROMPT,
 } from './prompts.js';
 import { CompatibilityShield } from './compatibility_check.js';
 import { ScriptManager } from './script_manager.js';
@@ -24,6 +25,7 @@ import {
   type StemSeparationOptions,
   type StemSeparationResult,
 } from './stem_separator.js';
+import { PipelineOrchestrator } from './pipeline_orchestrator.js';
 
 /**
  * Returns the correct MIME type for the file extension.
@@ -104,7 +106,12 @@ export class DucerCore {
    * Generates a modular system prompt based on required context.
    */
   private getSystemPrompt(mode: 'command' | 'advanced' | 'lite'): string {
-    let prompt = DUCER_CORE_PROMPT + '\n' + DAW_CONTROL_PROMPT;
+    let prompt =
+      DUCER_CORE_PROMPT +
+      '\n' +
+      AGENTIC_MODE_PROMPT +
+      '\n' +
+      DAW_CONTROL_PROMPT;
     if (mode === 'advanced') prompt += '\n' + ADVANCED_ANALYSIS_ADDON;
     if (mode === 'lite') prompt += '\n' + LITE_ANALYSIS_ADDON;
     return prompt;
@@ -193,6 +200,27 @@ export class DucerCore {
     config: DucerConfig,
     mode: 'command' | 'advanced' | 'lite' = 'command',
   ): Promise<string> {
+    // NEW: Check if this query triggers a known pipeline
+    const orchestrator = new PipelineOrchestrator(this);
+    const matchedPipeline = await orchestrator.identifyPipeline(query);
+
+    if (matchedPipeline) {
+      console.log(
+        `\n[Ducer-Core] Query matched pipeline: "${matchedPipeline.name}"`,
+      );
+      const result = await orchestrator.executePipeline(matchedPipeline);
+      return (
+        result.summary +
+        '\n\n' +
+        result.step_results
+          .map(
+            (r) =>
+              `${r.step_id} (${r.tool}): ${r.output.substring(0, 100)}${r.output.length > 100 ? '...' : ''}`,
+          )
+          .join('\n')
+      );
+    }
+
     const geminiClient = config.getGeminiClient();
     CompatibilityShield.validateGeminiClient(geminiClient);
 
@@ -213,7 +241,7 @@ export class DucerCore {
   /**
    * Dispatches music-specific tool calls.
    */
-  private async dispatchTool(call: {
+  public async dispatchTool(call: {
     name: string;
     args: string;
   }): Promise<string> {
