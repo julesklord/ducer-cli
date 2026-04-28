@@ -177,9 +177,9 @@ Google Cloud Console.
 For detailed information on how to use these tools, see the following official
 Google Cloud documentation:
 
-- [View and analyze logs with Logs Explorer](https://cloud.google.com/logging./view/logs-explorer-interface)
+- [View and analyze logs with Logs Explorer](https://cloud.google.com/logging/docs/view/logs-explorer-interface)
 - [Create charts with Metrics Explorer](https://cloud.google.com/monitoring/charts/metrics-explorer)
-- [Find and explore traces](https://cloud.google.com/trace./finding-traces)
+- [Find and explore traces](https://cloud.google.com/trace/docs/finding-traces)
 
 #### Monitoring dashboards
 
@@ -190,11 +190,11 @@ visualize your telemetry.
 Find this dashboard under **Google Cloud Monitoring Dashboard Templates** as
 "**Gemini CLI Monitoring**".
 
-![Gemini CLI Monitoring Dashboard Overview](./assets/monitoring-dashboard-overview.png)
+![Gemini CLI Monitoring Dashboard Overview](/docs/assets/monitoring-dashboard-overview.png)
 
-![Gemini CLI Monitoring Dashboard Metrics](./assets/monitoring-dashboard-metrics.png)
+![Gemini CLI Monitoring Dashboard Metrics](/docs/assets/monitoring-dashboard-metrics.png)
 
-![Gemini CLI Monitoring Dashboard Logs](./assets/monitoring-dashboard-logs.png)
+![Gemini CLI Monitoring Dashboard Logs](/docs/assets/monitoring-dashboard-logs.png)
 
 To learn more, see
 [Instant insights: Gemini CLI’s pre-configured monitoring dashboards](https://cloud.google.com/blog/topics/developers-practitioners/instant-insights-gemini-clis-new-pre-configured-monitoring-dashboards/).
@@ -1229,7 +1229,7 @@ These metrics follow standard [OpenTelemetry GenAI semantic conventions].
 - `gen_ai.client.operation.duration`: Measures operation duration in seconds.
 
 [OpenTelemetry GenAI semantic conventions]:
-  https://github.com/open-telemetry/semantic-conventions/blob/main./gen-ai/gen-ai-metrics.md
+  https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/gen-ai-metrics.md
 
 ### Traces
 
@@ -1269,4 +1269,4 @@ Every trace captures rich metadata via standard span attributes.
 </details>
 
 For more details on semantic conventions for events, see the
-[OpenTelemetry documentation](https://github.com/open-telemetry/semantic-conventions/blob/8b4f210f43136e57c1f6f47292eb6d38e3bf30bb./gen-ai/gen-ai-events.md).
+[OpenTelemetry documentation](https://github.com/open-telemetry/semantic-conventions/blob/8b4f210f43136e57c1f6f47292eb6d38e3bf30bb/docs/gen-ai/gen-ai-events.md).

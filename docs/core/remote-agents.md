@@ -278,7 +278,7 @@ auth:
 ### Google Application Default Credentials (`google-credentials`)
 
 Uses
-[Google Application Default Credentials (ADC)](https://cloud.google.com./authentication/application-default-credentials)
+[Google Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials)
 to authenticate with Google Cloud services and Cloud Run endpoints. This is the
 recommended auth method for agents hosted on Google Cloud infrastructure.
 

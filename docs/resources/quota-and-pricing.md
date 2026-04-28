@@ -67,7 +67,7 @@ includes:
 - Model requests to Flash model only.
 
 Learn more at
-[Gemini API Rate Limits](https://ai.google.dev/gemini-api./rate-limits).
+[Gemini API Rate Limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
 ### Log in with Vertex AI (Express Mode)
 
@@ -78,7 +78,7 @@ includes:
 - Quotas and models are specific to your account and their limits vary.
 
 Learn more at
-[Vertex AI Express Mode Limits](https://cloud.google.com/vertex-ai/generative-ai./start/express-mode/overview#quotas).
+[Vertex AI Express Mode Limits](https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview#quotas).
 
 ## Paid tier: Higher limits for a fixed cost
 
@@ -121,7 +121,7 @@ account.
 Standard/Plus and AI Expanded, are not supported._
 
 - [Workspace AI Ultra Access](https://workspace.google.com/products/ai-ultra/).
-- [Purchase a Gemini Code Assist Subscription through Google Cloud](https://cloud.google.com/gemini./codeassist/overview).
+- [Purchase a Gemini Code Assist Subscription through Google Cloud](https://cloud.google.com/gemini/docs/codeassist/overview).
 
   Quotas and pricing are based on a fixed price subscription with assigned
   license seats. For predictable costs, you can sign in with Google.
@@ -156,7 +156,7 @@ with other Google Cloud services.
 - Cost: Based on model and token usage.
 
 Learn more at
-[Vertex AI Dynamic Shared Quota](https://cloud.google.com/vertex-ai/generative-ai./resources/dynamic-shared-quota)
+[Vertex AI Dynamic Shared Quota](https://cloud.google.com/vertex-ai/generative-ai/docs/resources/dynamic-shared-quota)
 and [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing).
 
 ### Gemini API key
@@ -168,8 +168,8 @@ models. This is the most direct way to use the models.
 - Cost: Varies by pricing tier and model/token usage.
 
 Learn more at
-[Gemini API Rate Limits](https://ai.google.dev/gemini-api./rate-limits),
-[Gemini API Pricing](https://ai.google.dev/gemini-api./pricing)
+[Gemini API Rate Limits](https://ai.google.dev/gemini-api/docs/rate-limits),
+[Gemini API Pricing](https://ai.google.dev/gemini-api/docs/pricing)
 
 It’s important to highlight that when using an API key, you pay per token/call.
 This can be more expensive for many small calls with few tokens, but it's the

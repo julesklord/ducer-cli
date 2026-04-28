@@ -89,7 +89,7 @@ Service and Privacy Notice documents apply:
 ## 3. If you have signed in with a Gemini API key to the Vertex AI GenAI API
 
 If you are using a Gemini API key for authentication with a
-[Vertex AI GenAI API](https://cloud.google.com/vertex-ai/generative-ai./reference/rest)
+[Vertex AI GenAI API](https://cloud.google.com/vertex-ai/generative-ai/docs/reference/rest)
 backend, these Terms of Service and Privacy Notice documents apply:
 
 - Terms of Service: Your use of Gemini CLI is governed by the
@@ -101,4 +101,4 @@ backend, these Terms of Service and Privacy Notice documents apply:
 
 You may opt-out from sending Gemini CLI Usage Statistics to Google by following
 the instructions available here:
-[Usage Statistics Configuration](https://github.com/google-gemini/gemini-cli/blob/main./reference/configuration.md#usage-statistics).
+[Usage Statistics Configuration](https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md#usage-statistics).

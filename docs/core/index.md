@@ -61,7 +61,7 @@ model. This compression is designed to be lossless in terms of the information
 conveyed, but it reduces the overall number of tokens used.
 
 You can find the token limits for each model in the
-[Google AI documentation](https://ai.google.dev/gemini-api./models).
+[Google AI documentation](https://ai.google.dev/gemini-api/docs/models).
 
 ## Model fallback
 

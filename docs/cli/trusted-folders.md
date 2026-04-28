@@ -119,7 +119,7 @@ without prompting.
 
 For detailed instructions on managing folder trust within CI/CD workflows,
 review the
-[Gemini CLI trust guidance for GitHub Actions](https://github.com/google-github-actions/run-gemini-cli/blob/main./trust-guidance.md).
+[Gemini CLI trust guidance for GitHub Actions](https://github.com/google-github-actions/run-gemini-cli/blob/main/docs/trust-guidance.md).
 
 ## Overriding the trust file location
 

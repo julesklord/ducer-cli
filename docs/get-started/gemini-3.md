@@ -90,7 +90,7 @@ Using Gemini 3 Pro will require two steps: administrative enablement and user
 enablement.
 
 To learn more about these settings, refer to
-[Configure Gemini Code Assist release channels](https://developers.google.com/gemini-code-assist./configure-release-channels).
+[Configure Gemini Code Assist release channels](https://developers.google.com/gemini-code-assist/docs/configure-release-channels).
 
 ### Administrator instructions
 

@@ -387,7 +387,7 @@ on GitHub.
   - Install Preview: `npm install -g @google/gemini-cli@preview`
   - Enable in `/settings`
   - Docs:
-    [https://geminicli.com./cli/skills/](https://geminicli.com./cli/skills/)
+    [https://geminicli.com/docs/cli/skills/](https://geminicli.com/docs/cli/skills/)
 - **Gemini CLI wrapped:** Run `npx gemini-wrapped` to visualize your usage
   stats, top models, languages, and more!
 - **Windows clipboard image support:** Windows users can now paste images
@@ -715,7 +715,7 @@ on GitHub.
   [@chrstnb](https://github.com/chrstnb))
 - **OpenTelemetry GenAI metrics:** Aligns telemetry with industry-standard
   semantic conventions for improved interoperability.
-  ([spec](https://opentelemetry.io./concepts/semantic-conventions/),
+  ([spec](https://opentelemetry.io/docs/concepts/semantic-conventions/),
   [pr](https://github.com/google-gemini/gemini-cli/pull/10343) by
   [@jerop](https://github.com/jerop))
 - **List memory files:** Quickly find the location of your long-term memory
@@ -777,7 +777,7 @@ on GitHub.
     ([extension](https://github.com/gemini-cli-extensions/nanobanana))
 - **Telemetry config via environment:** Manage telemetry settings using
   environment variables for a more flexible setup.
-  ([docs](https://github.com/google-gemini/gemini-cli/blob/main./cli/telemetry.md#configuration),
+  ([docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/telemetry.md#configuration),
   [pr](https://github.com/google-gemini/gemini-cli/pull/9113) by
   [@jerop](https://github.com/jerop))
 - **​​Experimental todos:** Track and display progress on complex tasks with a
