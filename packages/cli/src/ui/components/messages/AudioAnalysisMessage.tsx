@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import type { FC } from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../../semantic-colors.js';
 import { ThemedGradient } from '../ThemedGradient.js';
@@ -17,46 +17,39 @@ interface AudioAnalysisMessageProps {
   summary: string;
 }
 
-export const AudioAnalysisMessage: React.FC<AudioAnalysisMessageProps> = ({
+export const AudioAnalysisMessage: FC<AudioAnalysisMessageProps> = ({
   filename,
-  waveform = [],
+  waveform,
   bpm,
   key,
   summary,
 }) => {
-  // Simple Braille-like waveform renderer
-  const renderWaveform = () => {
-    if (!waveform.length) return null;
-    const bars = waveform.map((v) => {
-      const height = Math.floor(v * 4);
-      const chars = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-      return chars[Math.min(height, chars.length - 1)];
-    });
-    return (
-      <Box marginTop={1} marginBottom={1}>
-        <Text color="cyan">{bars.join('')}</Text>
-      </Box>
-    );
-  };
-
   return (
-    <Box flexDirection="column" paddingX={2} borderStyle="round" borderColor="blue">
-      <Box justifyContent="space-between">
-        <Text bold color={theme.text.primary}>
-          AUDIO AUDIT: {filename}
+    <Box flexDirection="column" paddingY={1}>
+      <ThemedGradient>
+        <Text bold underline>
+          Audio Analysis: {filename}
         </Text>
-        <Box>
-          {bpm && <Text color="yellow"> {bpm} BPM </Text>}
-          {key && <Text color="magenta"> KEY: {key} </Text>}
+      </ThemedGradient>
+      <Box flexDirection="row" marginTop={1}>
+        <Box flexDirection="column" width={20}>
+          <Text color={theme.colors.textSecondary}>BPM:</Text>
+          <Text color={theme.colors.textSecondary}>Key:</Text>
+        </Box>
+        <Box flexDirection="column">
+          <Text color={theme.colors.textPrimary}>{bpm || 'Unknown'}</Text>
+          <Text color={theme.colors.textPrimary}>{key || 'Unknown'}</Text>
         </Box>
       </Box>
-
-      {renderWaveform()}
-
+      {waveform && (
+        <Box marginTop={1}>
+          <Text color={theme.colors.accentPrimary}>
+            Waveform: {waveform.length} points
+          </Text>
+        </Box>
+      )}
       <Box marginTop={1}>
-        <ThemedGradient>
-          <Text italic>{summary}</Text>
-        </ThemedGradient>
+        <Text color={theme.colors.textPrimary}>{summary}</Text>
       </Box>
     </Box>
   );

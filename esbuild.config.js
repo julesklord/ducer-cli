@@ -65,6 +65,7 @@ const external = [
   '@github/keytar',
   '@google/gemini-cli-devtools',
   '@google/gemini-cli-plugin-music',
+  '@google/gemini-cli-plugin-music',
 ];
 
 const baseConfig = {
