@@ -6,6 +6,9 @@
   <title>Ducer — Web Controller</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -20,12 +23,15 @@
       --border: #1c1c22;
       --green: #00e676;
       --green-dim: #00753c;
+      --green-glow: rgba(0, 230, 118, 0.3);
       --amber: #ffab00;
+      --amber-glow: rgba(255, 171, 0, 0.3);
       --red: #ff3d3d;
       --text: #d0ccc0;
       --muted: #565660;
       --white: #f0ede6;
       --font-display: 'Bebas Neue', sans-serif;
+      --font-main: 'Inter', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
       --terminal-bg: #0a0a0c;
     }
@@ -52,7 +58,7 @@
     body {
       background: var(--black);
       color: var(--text);
-      font-family: var(--font-mono);
+      font-family: var(--font-main);
       font-size: 13px;
       line-height: 1.6;
       overflow-x: hidden;
@@ -62,9 +68,15 @@
       content: '';
       position: fixed;
       inset: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.04) 2px, rgba(0, 0, 0, 0.04) 4px);
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.02) 2px, rgba(0, 0, 0, 0.02) 4px);
       pointer-events: none;
       z-index: 9999;
+      animation: scanline 10s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100%; }
     }
 
     /* ─── LAYOUT ─── */
@@ -91,6 +103,7 @@
       padding: 0.8rem 1.5rem;
       border-bottom: 1px solid var(--border);
       background: rgba(7, 7, 8, 0.95);
+      -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
     }
 
@@ -129,8 +142,18 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px var(--green)); }
+      50% { opacity: 0.4; filter: drop-shadow(0 0 5px var(--green)); }
+    }
+
+    .status-badge {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .status-badge:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--muted);
+      transform: translateY(-1px);
     }
 
     /* ─── MAIN CONTENT ─── */
@@ -180,12 +203,19 @@
     .btn:hover {
       border-color: var(--green);
       color: var(--green);
+      box-shadow: 0 0 15px rgba(0, 230, 118, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
     }
 
     .btn.active {
       background: var(--green);
       color: var(--black);
       border-color: var(--green);
+      box-shadow: 0 0 20px var(--green-glow);
     }
 
     input[type='text'],
@@ -255,8 +285,19 @@
       height: 400px;
       overflow-y: auto;
       font-size: 0.75rem;
-      font-family: 'Courier New', monospace;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
       line-height: 1.5;
+      position: relative;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+    }
+
+    .terminal::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+      background-size: 100% 4px, 3px 100%;
+      pointer-events: none;
     }
 
     .terminal-line {
@@ -289,11 +330,18 @@
       padding: 0.6rem 0.8rem;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.1s;
+      transition: all 0.2s ease;
+      animation: slideIn 0.3s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     .task-item:hover {
       background: var(--surface);
+      padding-left: 1rem;
     }
 
     .task-item.running {
@@ -401,6 +449,199 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    /* ─── PROGRESS BAR ─── */
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: var(--surface);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.8rem;
+      display: none;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green-dim), var(--green));
+      width: 0%;
+      transition: width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+    
+    .progress-text {
+      font-size: 0.7rem;
+      color: var(--green);
+      margin-top: 0.4rem;
+      text-align: right;
+      display: none;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    /* ─── CUSTOM SELECT ─── */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 20 20' fill='%23565660'%3E%3Cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      padding-right: 2rem !important;
+    }
+
+    /* ─── GLASS EFFECTS ─── */
+    .glass-panel {
+      background: rgba(17, 17, 20, 0.7) !important;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* ─── UTILITIES & REFACTORED CLASSES ─── */
+    .flex-center-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .flex-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flex-row {
+      display: flex;
+    }
+
+    .gap-04 { gap: 0.4rem; }
+    .gap-05 { gap: 0.5rem; }
+    .gap-08 { gap: 0.8rem; }
+    .gap-1 { gap: 1rem; }
+
+    .grid { display: grid; }
+    .grid-col-1 { grid-template-columns: 1fr; }
+
+    .mb-0 { margin-bottom: 0 !important; }
+    .mb-04 { margin-bottom: 04rem; }
+    .mb-05 { margin-bottom: 0.5rem; }
+    .mb-1 { margin-bottom: 1rem; }
+
+    .p-1 { padding: 1rem; }
+
+    .w-full { width: 100%; }
+
+    .cursor-pointer { cursor: pointer; }
+
+    .text-amber { color: var(--amber) !important; }
+    .text-green { color: var(--green) !important; }
+    .text-muted { color: var(--muted); }
+    .text-uppercase { text-transform: uppercase; }
+    .text-center { text-align: center; }
+    .text-italic { font-style: italic; }
+
+    .font-mono { font-family: var(--font-mono); }
+    .font-bold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+
+    .label-caps {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-value-large {
+      font-size: 1.4rem;
+      font-weight: 500;
+    }
+
+    .orchestrator-textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--black);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.8rem;
+      border-radius: 2px;
+      font-family: inherit;
+      resize: vertical;
+      margin-bottom: 0.5rem;
+    }
+
+    .context-input-field {
+      flex: 1;
+      margin-bottom: 0;
+      background: rgba(0,0,0,0.3);
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    .browse-button {
+      padding: 0 0.8rem;
+      background: var(--surface);
+    }
+
+    .uvr-drop-area {
+      border: 1px dashed var(--muted);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s;
+      background: rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .uvr-select {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      padding: 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 2px;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .uvr-sep-btn {
+      flex: 2;
+      border-color: var(--amber);
+      color: var(--amber);
+      padding: 0.6rem;
+      font-weight: 600;
+      box-shadow: 0 0 15px rgba(255, 171, 0, 0.1);
+    }
+
+    .uvr-badge-pro {
+      font-size: 0.6rem;
+      background: var(--amber);
+      color: var(--black);
+      padding: 0.1rem 0.3rem;
+      border-radius: 2px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .pipeline-btn-item {
+      font-size: 0.65rem;
+      text-align: left;
+      padding: 0.4rem;
+    }
+
+    .shortcut-item {
+      font-size: 0.7rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -408,7 +649,7 @@
   <div class="header">
     <div class="header-logo">DUCER</div>
     <div class="header-status">
-      <div class="status-badge" id="theme-toggle" style="cursor: pointer;" title="Cambiar Tema">
+      <div class="status-badge cursor-pointer" id="theme-toggle" title="Cambiar Tema">
         <span id="theme-icon">🌙</span>
       </div>
       <div class="status-badge">
@@ -419,10 +660,10 @@
         <span id="active-tasks">0 tareas</span>
       </div>
       <div class="status-badge">
-        <span id="model-name" style="color: var(--amber);">gemini-1.5-pro</span>
+        <span id="model-name" class="text-amber">gemini-1.5-pro</span>
       </div>
       <div class="status-badge">
-        <span id="tokens-count" style="color: var(--green);">0 TKNS</span>
+        <span id="tokens-count" class="text-green">0 TKNS</span>
       </div>
       <div class="status-badge">
         <span id="memory-usage">0 MB</span>
@@ -438,11 +679,11 @@
       <div class="panel">
         <div class="panel-title">IA Orchestrator</div>
 
-        <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.4rem;">
+        <div class="mb-1">
+          <label class="label-caps mb-04">
             Prompt / Comando
           </label>
-          <textarea id="custom-query" placeholder="Ej: 'Normaliza todas las voces y haz un remix drill' o 'Sube el volumen del bajo en el canal 4'..." style="width: 100%; min-height: 80px; background: var(--black); border: 1px solid var(--border); color: var(--text); padding: 0.8rem; border-radius: 2px; font-family: inherit; resize: vertical; margin-bottom: 0.5rem;"></textarea>
+          <textarea id="custom-query" placeholder="Ej: 'Normaliza todas las voces y haz un remix drill' o 'Sube el volumen del bajo en el canal 4'..." class="orchestrator-textarea"></textarea>
         </div>
 
         <div class="controls">
@@ -453,32 +694,62 @@
         </div>
       </div>
 
-      <!-- AUDIO TOOLS -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-        <!-- UVR SEPARATOR -->
-        <div class="panel" style="margin-bottom: 0;">
-          <div class="panel-title">UVR Separator <span style="font-size: 0.6rem; color: var(--amber); margin-left: 0.5rem;">PRO</span></div>
-          <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-            <div id="uvr-drop-zone" style="border: 1px dashed var(--muted); padding: 1.2rem; text-align: center; font-size: 0.7rem; color: var(--muted); cursor: pointer; border-radius: 2px;">
-              Arrastra audio aquí
+        <!-- GLOBAL SETTINGS -->
+        <div class="panel glass-panel">
+          <div class="panel-title flex-center-between">
+            <span>Contexto de Proyecto</span>
+            <span class="text-muted opacity-50">📁</span>
+          </div>
+          <div class="flex-col gap-05">
+            <label class="label-caps font-bold">
+              Archivo / Track de Trabajo
+            </label>
+            <div class="flex-row gap-05">
+              <input type="text" id="file-input" placeholder="C:/Musica/mi_track.wav" class="context-input-field">
+              <button class="btn browse-button" id="browse-btn" title="Explorar">📂</button>
             </div>
-            <select id="uvr-model" style="background: var(--black); border: 1px solid var(--border); color: var(--text); padding: 0.4rem; font-size: 0.7rem; border-radius: 2px;">
-              <option value="uvr_vocals">Vocales (MDX-NET)</option>
-              <option value="uvr_inst">Instrumental (MDX-NET)</option>
-              <option value="uvr_drums">Batería (Demucs)</option>
-            </select>
-            <button class="btn" id="uvr-btn" style="border-color: var(--amber); color: var(--amber); padding: 0.4rem;">Separar Stems</button>
+            <p class="text-italic text-muted" style="font-size: 0.6rem;">Referencia global para comandos rápidos y pipelines.</p>
+          </div>
+        </div>
+
+        <!-- UVR SEPARATOR -->
+        <div class="panel glass-panel mb-0" style="border-top: 2px solid var(--amber) !important;">
+          <div class="panel-title flex-center-between">
+            <div>UVR Separator <span class="uvr-badge-pro">PRO</span></div>
+            <span class="text-muted opacity-50">✨</span>
+          </div>
+          <div class="flex-col gap-08">
+            <div id="uvr-drop-zone" class="uvr-drop-area">
+              <div class="mb-05" style="font-size: 1.2rem;">💧</div>
+              Arrastra audio aquí para vincular ruta
+            </div>
+            <div class="grid grid-col-1 gap-04">
+              <label class="label-caps" style="font-size: 0.6rem;">Modelo de Separación</label>
+              <select id="uvr-model" class="uvr-select" title="Seleccionar modelo de separación">
+                <option value="uvr_vocals">Vocales (MDX-NET / ONNX)</option>
+                <option value="uvr_inst">Instrumental (MDX-NET / ONNX)</option>
+                <option value="uvr_drums">Batería & Percusión (Demucs v4)</option>
+              </select>
+            </div>
+            <div class="flex-row gap-05">
+              <button class="btn uvr-sep-btn" id="uvr-btn">Separar Stems</button>
+              <button class="btn browse-button" id="uvr-setup-btn" title="Setup Engine" style="flex: 1; padding: 0.6rem;">Setup</button>
+            </div>
+            <div id="uvr-progress-container" class="progress-container">
+              <div id="uvr-progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="uvr-progress-text" class="progress-text">0% completado</div>
           </div>
         </div>
 
         <!-- QUICK PIPELINES -->
-        <div class="panel" style="margin-bottom: 0;">
+        <div class="panel mb-0">
           <div class="panel-title">Quick Pipelines</div>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-            <button class="btn pipeline-btn" data-pipeline="vocal-polish" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Vocal Polish Chain</button>
-            <button class="btn pipeline-btn" data-pipeline="lofi-master" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Lo-Fi Master Chain</button>
-            <button class="btn pipeline-btn" data-pipeline="phase-align" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Auto-Phase Align</button>
-            <button class="btn pipeline-btn" data-pipeline="export-mix" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Export for Mix</button>
+          <div class="flex-col gap-04">
+            <button class="btn pipeline-btn pipeline-btn-item" data-pipeline="vocal-polish">Vocal Polish Chain</button>
+            <button class="btn pipeline-btn pipeline-btn-item" data-pipeline="lofi-master">Lo-Fi Master Chain</button>
+            <button class="btn pipeline-btn pipeline-btn-item" data-pipeline="phase-align">Auto-Phase Align</button>
+            <button class="btn pipeline-btn pipeline-btn-item" data-pipeline="export-mix">Export for Mix</button>
           </div>
         </div>
       </div>
@@ -513,7 +784,7 @@
       <div class="panel">
         <div class="panel-title">Historial</div>
         <ul class="task-list" id="task-history">
-          <li style="padding: 1rem; color: var(--muted); text-align: center;">
+          <li class="p-1 text-muted text-center">
             Esperando tareas...
           </li>
         </ul>
@@ -522,24 +793,24 @@
       <!-- QUICK STATS -->
       <div class="panel">
         <div class="panel-title">Estadísticas</div>
-        <div style="display: grid; gap: 0.8rem;">
+        <div class="grid gap-08">
           <div>
-            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+            <div class="stat-label">
               Tasa de éxito
             </div>
-            <div id="success-rate" style="font-size: 1.4rem; color: var(--green); font-weight: 500;">—</div>
+            <div id="success-rate" class="stat-value-large text-green">—</div>
           </div>
           <div>
-            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+            <div class="stat-label">
               Consumo Total
             </div>
-            <div id="total-tokens-stat" style="font-size: 1.4rem; color: var(--green); font-weight: 500;">—</div>
+            <div id="total-tokens-stat" class="stat-value-large text-green">—</div>
           </div>
           <div>
-            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+            <div class="stat-label">
               Promedio duración
             </div>
-            <div id="avg-duration" style="font-size: 1.4rem; color: var(--text); font-weight: 500;">—</div>
+            <div id="avg-duration" class="stat-value-large">—</div>
           </div>
         </div>
       </div>
@@ -547,7 +818,7 @@
       <!-- KEYBOARD SHORTCUTS -->
       <div class="panel">
         <div class="panel-title">Atajos</div>
-        <div style="font-size: 0.7rem; line-height: 1.8; color: var(--muted);">
+        <div class="shortcut-item">
           <div><strong>Ctrl+Enter</strong> → Ejecutar query</div>
           <div><strong>Ctrl+L</strong> → Limpiar terminal</div>
           <div><strong>Ctrl+N</strong> → Normalizar</div>
@@ -603,6 +874,65 @@
     socket.on('task_error', (msg) => {
       appendToTerminal(`ERROR: ${msg.error}`, 'error');
       fetchStatus();
+    });
+
+    socket.on('task_progress', (msg) => {
+      const container = document.getElementById('uvr-progress-container');
+      const bar = document.getElementById('uvr-progress-bar');
+      const text = document.getElementById('uvr-progress-text');
+      
+      if (container && bar && text) {
+        container.style.display = 'block';
+        text.style.display = 'block';
+        bar.style.width = `${msg.progress}%`;
+        text.textContent = `${msg.progress}% completado`;
+        
+        if (msg.progress >= 100) {
+          setTimeout(() => {
+            container.style.display = 'none';
+            text.style.display = 'none';
+          }, 3000);
+        }
+      }
+    });
+
+    // ──── DRAG & DROP LOGIC ────
+    const dropZone = document.getElementById('uvr-drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--green)';
+      dropZone.style.color = 'var(--green)';
+      dropZone.style.background = 'rgba(0, 230, 118, 0.05)';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = 'var(--muted)';
+      dropZone.style.color = 'var(--muted)';
+      dropZone.style.background = 'transparent';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--muted)';
+      dropZone.style.color = 'var(--muted)';
+      dropZone.style.background = 'transparent';
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        // Since we are in a browser, we can't get the full absolute path
+        // but we can try to guess or use the name.
+        // In a real local desktop app, we would use electron or a native binding.
+        // For now, we inform the user.
+        const file = files[0];
+        fileInput.value = file.name; // In practice, user might need to paste full path
+        appendToTerminal(`[System] Archivo detectado: ${file.name}. Asegúrate de que Ducer tenga acceso a la ruta completa.`, 'warn');
+      }
+    });
+
+    document.getElementById('browse-btn').addEventListener('click', () => {
+      appendToTerminal('[System] El explorador de archivos nativo requiere permisos de sistema. Por ahora, por favor pega la ruta completa en el campo de texto.', 'warn');
     });
 
     // ──── UI FUNCTIONS ────
@@ -668,7 +998,7 @@
         historyEl.innerHTML = '';
 
         if (tasks.length === 0) {
-          historyEl.innerHTML = '<li style="padding: 1rem; color: var(--muted); text-align: center;">Sin historial</li>';
+          historyEl.innerHTML = '<li class="p-1 text-muted text-center">Sin historial</li>';
           return;
         }
 
@@ -687,10 +1017,10 @@
             <div class="task-info">
               <span class="task-type">${task.type.toUpperCase()}</span>
               <span class="task-time">${new Date(task.timestamp).toLocaleTimeString()}</span>
-              <span style="font-size: 0.6rem; color: var(--muted);">[${task.metrics?.model || '—'}]</span>
+              <span class="text-muted" style="font-size: 0.6rem;">[${task.metrics?.model || '—'}]</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 1rem;">
-              <span style="font-size: 0.65rem; color: var(--green);">${task.metrics?.total_tokens || 0} T</span>
+            <div class="flex-center-between gap-1">
+              <span class="text-green" style="font-size: 0.65rem;">${task.metrics?.total_tokens || 0} T</span>
               <span class="task-status ${statusColor}">${task.status}</span>
               <span class="task-duration">${(task.duration_ms / 1000).toFixed(1)}s</span>
             </div>
@@ -706,7 +1036,7 @@
     async function executeTask(taskType) {
       const filePath = document.getElementById('file-input').value || 'track.wav';
 
-      appendToTerminal(`\n[Ducer] Starting ${taskType} task...`, 'info');
+      appendToTerminal(`\n[Ducer] Starting ${taskType} task for: ${filePath}`, 'info');
 
       try {
         const res = await fetch(`/api/tasks/${taskType}`, {
@@ -726,7 +1056,7 @@
       const query = providedQuery || document.getElementById('custom-query').value;
       if (!query) return alert('Por favor ingresa una query');
 
-      appendToTerminal(`\n[Ducer] Custom query...`, 'info');
+      appendToTerminal(`\n[Ducer] Orchestrating query...`, 'info');
 
       try {
         const res = await fetch('/api/tasks/custom', {
@@ -745,17 +1075,44 @@
     // UVR Event
     document.getElementById('uvr-btn').addEventListener('click', () => {
       const model = document.getElementById('uvr-model').value;
+      const filePath = document.getElementById('file-input').value;
+      
+      if (!filePath) {
+        return alert('Por favor especifica o arrastra un archivo primero.');
+      }
+
       appendToTerminal(`\n[UVR] Iniciando separación de stems con modelo: ${model}`, 'info');
-      // En una implementación real, esto dispararía una tarea de Ducer con el flag de UVR
-      executeCustom(`separa los stems de este audio usando el modelo ${model}`);
+      // Reset progress
+      document.getElementById('uvr-progress-bar').style.width = '0%';
+      document.getElementById('uvr-progress-text').textContent = '0% completado';
+      
+      executeCustom(`separa los stems de ${filePath} usando el modelo ${model}`);
+    });
+
+    document.getElementById('uvr-setup-btn').addEventListener('click', async () => {
+      if (!confirm('Esto instalará el entorno de Python y audio-separator. ¿Continuar?')) return;
+      
+      appendToTerminal(`\n[UVR] Iniciando configuración del motor...`, 'info');
+      try {
+        const res = await fetch('/api/tasks/setup-uvr', { method: 'POST' });
+        const data = await res.json();
+        currentTaskId = data.task_id;
+      } catch (err) {
+        appendToTerminal(`ERROR: ${err.message}`, 'error');
+      }
     });
 
     // Pipeline Events
     document.querySelectorAll('.pipeline-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const pipeline = btn.dataset.pipeline;
+        const filePath = document.getElementById('file-input').value;
+        const query = filePath 
+          ? `ejecuta la pipeline de producción ${pipeline} sobre ${filePath}`
+          : `ejecuta la pipeline de producción ${pipeline}`;
+          
         appendToTerminal(`\n[Pipeline] Ejecutando cadena de producción: ${pipeline}`, 'info');
-        executeCustom(`ejecuta la pipeline de producción ${pipeline}`);
+        executeCustom(query);
       });
     });
 
