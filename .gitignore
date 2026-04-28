@@ -83,3 +83,4 @@ qp_audit.md
 README_GEMINI.md
 .gemini/
 .vs/
+/patch_workflow.sh
