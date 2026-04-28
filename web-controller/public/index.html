@@ -434,31 +434,55 @@
   <div class="container">
     <!-- LEFT COLUMN: CONTROL + TERMINAL -->
     <div>
-      <!-- CONTROL PANEL -->
+      <!-- IA ORCHESTRATOR -->
       <div class="panel">
-        <div class="panel-title">Control</div>
+        <div class="panel-title">IA Orchestrator</div>
 
         <div style="margin-bottom: 1rem;">
           <label style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.4rem;">
-            Archivo
+            Prompt / Comando
           </label>
-          <input type="text" id="file-input" placeholder="/ruta/a/track.wav" value="current_track.wav">
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.4rem;">
-            Query personalizado (opcional)
-          </label>
-          <input type="text" id="custom-query" placeholder="ej: normaliza este track en REAPER...">
+          <textarea id="custom-query" placeholder="Ej: 'Normaliza todas las voces y haz un remix drill' o 'Sube el volumen del bajo en el canal 4'..." style="width: 100%; min-height: 80px; background: var(--black); border: 1px solid var(--border); color: var(--text); padding: 0.8rem; border-radius: 2px; font-family: inherit; resize: vertical; margin-bottom: 0.5rem;"></textarea>
         </div>
 
         <div class="controls">
+          <button class="btn" data-task="custom">Ejecutar Comando</button>
           <button class="btn" data-task="normalize">Normalizar</button>
           <button class="btn" data-task="remix">Remix</button>
           <button class="btn" data-task="analyze">Analizar</button>
-          <button class="btn" data-task="custom">Custom</button>
         </div>
       </div>
+
+      <!-- AUDIO TOOLS -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+        <!-- UVR SEPARATOR -->
+        <div class="panel" style="margin-bottom: 0;">
+          <div class="panel-title">UVR Separator <span style="font-size: 0.6rem; color: var(--amber); margin-left: 0.5rem;">PRO</span></div>
+          <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+            <div id="uvr-drop-zone" style="border: 1px dashed var(--muted); padding: 1.2rem; text-align: center; font-size: 0.7rem; color: var(--muted); cursor: pointer; border-radius: 2px;">
+              Arrastra audio aquí
+            </div>
+            <select id="uvr-model" style="background: var(--black); border: 1px solid var(--border); color: var(--text); padding: 0.4rem; font-size: 0.7rem; border-radius: 2px;">
+              <option value="uvr_vocals">Vocales (MDX-NET)</option>
+              <option value="uvr_inst">Instrumental (MDX-NET)</option>
+              <option value="uvr_drums">Batería (Demucs)</option>
+            </select>
+            <button class="btn" id="uvr-btn" style="border-color: var(--amber); color: var(--amber); padding: 0.4rem;">Separar Stems</button>
+          </div>
+        </div>
+
+        <!-- QUICK PIPELINES -->
+        <div class="panel" style="margin-bottom: 0;">
+          <div class="panel-title">Quick Pipelines</div>
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <button class="btn pipeline-btn" data-pipeline="vocal-polish" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Vocal Polish Chain</button>
+            <button class="btn pipeline-btn" data-pipeline="lofi-master" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Lo-Fi Master Chain</button>
+            <button class="btn pipeline-btn" data-pipeline="phase-align" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Auto-Phase Align</button>
+            <button class="btn pipeline-btn" data-pipeline="export-mix" style="font-size: 0.65rem; text-align: left; padding: 0.4rem;">Export for Mix</button>
+          </div>
+        </div>
+      </div>
+
 
       <!-- METRICS -->
       <div class="metrics">
@@ -698,8 +722,8 @@
       }
     }
 
-    async function executeCustom() {
-      const query = document.getElementById('custom-query').value;
+    async function executeCustom(providedQuery) {
+      const query = providedQuery || document.getElementById('custom-query').value;
       if (!query) return alert('Por favor ingresa una query');
 
       appendToTerminal(`\n[Ducer] Custom query...`, 'info');
@@ -717,6 +741,23 @@
         appendToTerminal(`ERROR: ${err.message}`, 'error');
       }
     }
+
+    // UVR Event
+    document.getElementById('uvr-btn').addEventListener('click', () => {
+      const model = document.getElementById('uvr-model').value;
+      appendToTerminal(`\n[UVR] Iniciando separación de stems con modelo: ${model}`, 'info');
+      // En una implementación real, esto dispararía una tarea de Ducer con el flag de UVR
+      executeCustom(`separa los stems de este audio usando el modelo ${model}`);
+    });
+
+    // Pipeline Events
+    document.querySelectorAll('.pipeline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pipeline = btn.dataset.pipeline;
+        appendToTerminal(`\n[Pipeline] Ejecutando cadena de producción: ${pipeline}`, 'info');
+        executeCustom(`ejecuta la pipeline de producción ${pipeline}`);
+      });
+    });
 
     // ──── EVENT LISTENERS ────
     document.querySelectorAll('.btn[data-task]').forEach((btn) => {
