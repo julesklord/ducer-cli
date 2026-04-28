@@ -149,7 +149,13 @@ Do not prioritize these until P4 is done:
 
 ---
 
-## 8. Bottom Line
+## 8. Release History
+
+- **v1.0.0-alpha.1**: First public alpha release. stabilization phase completed.
+
+---
+
+## 9. Bottom Line
 
 Stabilization phase is **COMPLETED**. Ducer is now a robust, auditable engine.
 The next mission is **Batch Utility expansion**.
