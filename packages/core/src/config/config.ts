@@ -233,6 +233,14 @@ export interface GemmaModelRouterSettings {
   };
 }
 
+export interface DucerSettings {
+  background_jobs?: {
+    enabled: boolean;
+    max_parallel: number;
+    queue_file?: string;
+  };
+}
+
 export interface ADKSettings {
   agentSessionNoninteractiveEnabled?: boolean;
   agentSessionInteractiveEnabled?: boolean;
@@ -679,6 +687,8 @@ export interface ConfigParameters {
   policyUpdateConfirmationRequest?: PolicyUpdateConfirmationRequest;
   output?: OutputSettings;
   gemmaModelRouter?: GemmaModelRouterSettings;
+  ducer?: DucerSettings;
+  
   adk?: ADKSettings;
   disableModelRouterForAuth?: AuthType[];
   continueOnFailedApiCall?: boolean;
@@ -767,6 +777,7 @@ export class Config implements McpContext, AgentLoopContext {
   private contentGenerator!: ContentGenerator;
   readonly modelConfigService: ModelConfigService;
   private readonly embeddingModel: string;
+  private readonly ducer: DucerSettings;
   private readonly sandbox: SandboxConfig | undefined;
   private _sandboxForbiddenPaths: string[] | undefined;
   private readonly targetDir: string;
@@ -788,6 +799,7 @@ export class Config implements McpContext, AgentLoopContext {
   private readonly mcpEnabled: boolean;
   private readonly extensionsEnabled: boolean;
   private mcpServers: Record<string, MCPServerConfig> | undefined;
+  
   private readonly mcpEnablementCallbacks?: McpEnablementCallbacks;
   private userMemory: string | HierarchicalMemory;
   private geminiMdFileCount: number;
@@ -1356,6 +1368,14 @@ export class Config implements McpContext, AgentLoopContext {
       },
     };
 
+    this.ducer = params.ducer ?? {
+      background_jobs: { enabled: true, max_parallel: 2 },
+    };
+
+    this.ducer = params.ducer ?? {
+      background_jobs: { enabled: true, max_parallel: 2 },
+    };
+
     this.agentSessionNoninteractiveEnabled =
       params.adk?.agentSessionNoninteractiveEnabled ?? false;
     this.agentSessionInteractiveEnabled =
@@ -1411,6 +1431,9 @@ export class Config implements McpContext, AgentLoopContext {
     this.modelRouterService = new ModelRouterService(this);
   }
 
+    get ducerSettings(): DucerSettings {
+    return this.ducer;
+  }
   get config(): Config {
     return this;
   }
@@ -2216,7 +2239,7 @@ export class Config implements McpContext, AgentLoopContext {
                 ? Math.round(remaining / bucket.remainingFraction)
                 : (this.modelQuotas.get(bucket.modelId)?.limit ?? 0);
           } else {
-            // Server only sent remainingFraction — use a normalized scale.
+            // Server only sent remainingFraction ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â use a normalized scale.
             limit = 100;
             remaining = Math.round(bucket.remainingFraction * limit);
           }
@@ -3058,7 +3081,7 @@ export class Config implements McpContext, AgentLoopContext {
    * Checks if a given absolute path is allowed for file system operations.
    * A path is allowed if it's within the workspace context, the project's
    * temporary directory, or is exactly the global personal `~/.gemini/GEMINI.md`
-   * file (the latter is the only file under `~/.gemini/` that is reachable —
+   * file (the latter is the only file under `~/.gemini/` that is reachable ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
    * settings, credentials, keybindings, etc. remain disallowed).
    *
    * @param absolutePath The absolute path to check.

@@ -11,7 +11,7 @@ import { AudioAnalyzer } from './audio_analyzer';
 import * as cp from 'node:child_process';
 
 vi.mock('node:child_process', () => ({
-  exec: vi.fn((cmd, cb) => cb(null, { stdout: 'ok', stderr: '' })),
+  execFile: vi.fn((_cmd, _args, cb) => cb(null, { stdout: 'ok', stderr: '' })),
 }));
 
 vi.mock('node:fs', () => ({
@@ -37,12 +37,14 @@ describe('AudioAnalyzer', () => {
       duration: 5,
     });
 
-    expect(cp.exec).toHaveBeenCalledWith(
-      expect.stringContaining('songsee "test.wav" --viz mel'),
+    expect(cp.execFile).toHaveBeenCalledWith(
+      'songsee',
+      expect.arrayContaining(['test.wav', '--viz', 'mel']),
       expect.any(Function),
     );
-    expect(cp.exec).toHaveBeenCalledWith(
-      expect.stringContaining('--start 10 --duration 5'),
+    expect(cp.execFile).toHaveBeenCalledWith(
+      'songsee',
+      expect.arrayContaining(['--start', '10', '--duration', '5']),
       expect.any(Function),
     );
     expect(result.panels).toContain('mel');
@@ -51,15 +53,16 @@ describe('AudioAnalyzer', () => {
   it('should construct correct whisper command', async () => {
     const result = await analyzer.transcribe('vocal.wav', { model: 'base' });
 
-    expect(cp.exec).toHaveBeenCalledWith(
-      expect.stringContaining('whisper "vocal.wav" --model base'),
+    expect(cp.execFile).toHaveBeenCalledWith(
+      'whisper',
+      expect.arrayContaining(['vocal.wav', '--model', 'base']),
       expect.any(Function),
     );
     expect(result.text).toBe('Transcription result');
   });
 
   it('should handle songsee errors', async () => {
-    (cp.exec as any).mockImplementationOnce((cmd: string, cb: any) =>
+    (cp.execFile as any).mockImplementationOnce((_cmd: string, _args: string[], cb: any) =>
       cb(new Error('Spawn fail')),
     );
 

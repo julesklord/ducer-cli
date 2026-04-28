@@ -5,7 +5,7 @@
  */
 
 import type { CommandModule, Argv } from 'yargs';
-import { ducerCommand as pluginDucerCommand, handleDucerCommand } from '../../../../plugins_music/src/router.js';
+import { ducerCommand as pluginDucerCommand, handleDucerCommand } from '@google/gemini-cli-plugin-music';
 import { initializeOutputListenersAndFlush, resolveSessionId } from '../gemini.js';
 import { loadSettings } from '../config/settings.js';
 import { loadCliConfig, type CliArgs } from '../config/config.js';
@@ -34,8 +34,14 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
       }
     }),
   handler: async (argv: DucerArgs) => {
+    // Si no hay subcomando, no hacemos nada aquÃ­ y dejamos que el flujo
+    // principal de la CLI continÃºe hacia startInteractiveUI.
+    if (!argv.subcommand) {
+      return;
+    }
+
     try {
-      // 1. Cargamos configuración base
+      // 1. Cargamos configuraciÃ³n base
       const settings = loadSettings();
       const { sessionId } = await resolveSessionId(argv.resume);
 
@@ -47,7 +53,7 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
         argv as unknown as CliArgs,
       );
       
-      // 3. Autenticación
+      // 3. AutenticaciÃ³n
       const authType = await validateNonInteractiveAuth(
         settings.merged.security.auth.selectedType,
         settings.merged.security.auth.useExternal,
@@ -61,7 +67,7 @@ export const ducerCommand: CommandModule<object, DucerArgs> = {
 
       await config.initialize();
 
-      // 4. Ejecutamos la lógica de la capa musical (Ducer)
+      // 4. Ejecutamos la lÃ³gica de la capa musical (Ducer)
       await handleDucerCommand(argv, config);
 
       // 5. Salimos limpiamente

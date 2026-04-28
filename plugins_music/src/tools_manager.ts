@@ -47,37 +47,6 @@ export class MusicToolsManager {
         },
       },
       {
-        name: 'analyze_frequencies',
-        description: 'Detailed frequency/tonal balance audit.',
-        parameters: {
-          type: 'object',
-          properties: {
-            focus: {
-              type: 'string',
-              description: 'Aspect (e.g., "lows", "vocals", "balance").',
-            },
-          },
-        },
-      },
-      {
-        name: 'suggest_chords',
-        description: 'Suggest chord progressions or harmonic variations.',
-        parameters: {
-          type: 'object',
-          properties: {
-            key: {
-              type: 'string',
-              description: 'Musical key (e.g., "Am", "C# Major").',
-            },
-            style: {
-              type: 'string',
-              description: 'Genre (e.g., "Jazz", "Lo-fi").',
-            },
-          },
-          required: ['key'],
-        },
-      },
-      {
         name: 'search_actions',
         description: 'Search DAW actions by name/function.',
         parameters: {
@@ -131,20 +100,6 @@ export class MusicToolsManager {
             code: { type: 'string', description: 'Lua code.' },
           },
           required: ['code'],
-        },
-      },
-      {
-        name: 'install_producer_toolset',
-        description: 'Installs a complete set of third-party producer scripts/tools for a specific author (e.g., X-Raym, MPL, Sexan). Use when a requested production technique requires external libraries.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            author: {
-              type: 'STRING',
-              description: 'Name of the author or toolset to install (e.g., X-Raym, MPL, ReaperTeam).',
-            },
-          },
-          required: ['author'],
         },
       },
       {

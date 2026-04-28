@@ -60,4 +60,21 @@ describe('MusicMediaHandler', () => {
     const result = handler.validateFile('TEST.MP3');
     expect(result).toEqual({ valid: true });
   });
+
+  it('allows larger local-processing audio files', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.statSync).mockReturnValue({ size: 120 * 1024 * 1024 } as fs.Stats);
+
+    const result = handler.validateAudioFileForLocalProcessing('mix.wav');
+    expect(result).toEqual({ valid: true });
+  });
+
+  it('rejects unsupported local-processing formats', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.statSync).mockReturnValue({ size: 1 * 1024 * 1024 } as fs.Stats);
+
+    const result = handler.validateAudioFileForLocalProcessing('notes.mid');
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/Unsupported local-processing audio format/);
+  });
 });

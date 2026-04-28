@@ -78,3 +78,5 @@ plugins_music/src/**/*.js
 plugins_music/src/**/*.js.map
 plugins_music/src/**/*.d.ts
 !plugins_music/src/**/*.ts
+
+.gemini/

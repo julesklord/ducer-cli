@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { logger } from './logger.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { MusicMediaHandler } from './media_handler.js';
@@ -18,10 +19,15 @@ import {
 } from './prompts.js';
 import { CompatibilityShield } from './compatibility_check.js';
 import { ScriptManager } from './script_manager.js';
+import {
+  StemSeparationManager,
+  type StemSeparationOptions,
+  type StemSeparationResult,
+} from './stem_separator.js';
 
 /**
- * Retorna el MIME type correcto para la extensión del archivo.
- * Gemini 1.5 Pro acepta audio/wav, audio/mp3, audio/aiff, audio/ogg, audio/flac.
+ * Returns the correct MIME type for the file extension.
+ * Gemini 1.5 Pro accepts audio/wav, audio/mp3, audio/aiff, audio/ogg, audio/flac.
  */
 function getAudioMediaType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -54,6 +60,17 @@ export class DucerCore {
   private toolsManager: MusicToolsManager;
   private bridge: DawBridge;
   private scriptManager: ScriptManager;
+  private stemSeparationManager: StemSeparationManager;
+  private currentGeminiClient: {
+    sendMessageStream: (
+      input: unknown[],
+      signal: AbortSignal,
+      sessionId: string,
+      toolDeclarations: unknown[],
+      flag: boolean,
+      label: string,
+    ) => AsyncIterable<{ type: string; value: string | { name: string; args: string } }>;
+  } | null = null;
 
   private readonly actionsDbPath: string;
 
@@ -63,6 +80,7 @@ export class DucerCore {
     this.toolsManager = new MusicToolsManager();
     this.bridge = bridge;
     this.scriptManager = new ScriptManager();
+    this.stemSeparationManager = new StemSeparationManager();
     this.actionsDbPath = path.join(
       process.cwd(),
       'ducer-skills',
@@ -89,6 +107,78 @@ export class DucerCore {
     return prompt;
   }
 
+  private async runToolAwareLoop(
+    initialParts: unknown[],
+    sessionId: string,
+    toolDeclarations: unknown[],
+    engineLabel: string,
+    enrichToolCall?: (call: {
+      name: string;
+      args: string;
+    }) => { name: string; args: string },
+  ): Promise<string> {
+    if (!this.currentGeminiClient) {
+      throw new Error('Gemini client is not initialized for the active Ducer flow.');
+    }
+
+    let fullResponse = '';
+    let currentMessages: Array<{ role: string; parts: unknown[] }> = [
+      { role: 'user', parts: initialParts },
+    ];
+    let turnCount = 0;
+
+    while (turnCount < 10) {
+      turnCount++;
+      const currentParts = currentMessages[0]?.parts || [];
+      const responseStream = this.currentGeminiClient.sendMessageStream(
+        currentParts,
+        new AbortController().signal,
+        sessionId,
+        toolDeclarations,
+        false,
+        engineLabel,
+      );
+
+      const toolCallsThisTurn: Array<{ name: string; args: string }> = [];
+
+      for await (const event of responseStream) {
+        if (event.type === 'content' && typeof event.value === 'string') {
+          process.stdout.write(event.value);
+          fullResponse += event.value;
+        }
+        if (
+          event.type === 'tool-call' &&
+          typeof event.value === 'object' &&
+          event.value !== null &&
+          'name' in event.value &&
+          'args' in event.value
+        ) {
+          toolCallsThisTurn.push(event.value as { name: string; args: string });
+        }
+      }
+
+      if (toolCallsThisTurn.length === 0) {
+        return fullResponse;
+      }
+
+      const toolResultParts: unknown[] = [];
+      for (const rawCall of toolCallsThisTurn) {
+        const call = enrichToolCall ? enrichToolCall(rawCall) : rawCall;
+        console.log(`\n[Ducer] Executing: ${call.name}...`);
+        const result = await this.dispatchTool(call);
+        console.log(`[Ducer] Result for ${call.name} obtained.`);
+        toolResultParts.push({
+          text: `[RESULTADO TOOL ${call.name}]: ${result}`,
+        });
+      }
+
+      currentMessages = [{ role: 'user', parts: toolResultParts }];
+    }
+
+    console.warn(`[Ducer] Turn limit reached in ${engineLabel}.`);
+    return fullResponse;
+  }
+
   /**
    * Main entry point for any "insight" request (natural language query).
    */
@@ -105,74 +195,15 @@ export class DucerCore {
     const systemPrompt = this.getSystemPrompt(mode) + '\n\n' + context;
     const toolDeclarations = this.toolsManager.getMusicToolsDeclarations();
 
-    console.log(`[Ducer] Procesando consulta: "${query}"`);
+    console.log(`[Ducer] Processing query: "${query}"`);
+    this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
 
-    // Historial acumulado para mantener el contexto entre herramientas
-    const history: Array<{ role: string; parts: unknown[] }> = [];
-    
-    // El input inicial combina el sistema y la query
-    let currentInput: unknown[] = [
-      { text: systemPrompt + '\n\nUSER: ' + query },
-    ];
-
-    let fullResponse = '';
-    let continueLoop = true;
-    let turnCount = 0;
-
-    while (continueLoop && turnCount < 10) {
-      turnCount++;
-      continueLoop = false;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const responseStream = (geminiClient as any).sendMessageStream(
-        currentInput,
-        new AbortController().signal,
-        sessionId,
-        toolDeclarations,
-        false,
-        'Ducer Insight Engine',
-      );
-
-      const toolCallsThisTurn: Array<{ name: string; args: string }> = [];
-      let assistantTextThisTurn = '';
-
-      for await (const event of responseStream) {
-        if (event.type === 'content') {
-          process.stdout.write(event.value);
-          fullResponse += event.value;
-          assistantTextThisTurn += event.value;
-        }
-        if (event.type === 'tool-call') {
-          toolCallsThisTurn.push(event.value);
-        }
-      }
-
-      if (assistantTextThisTurn) {
-        history.push({ role: 'user', parts: currentInput });
-        history.push({ role: 'assistant', parts: [{ text: assistantTextThisTurn }] });
-      }
-
-      if (toolCallsThisTurn.length > 0) {
-        continueLoop = true;
-        const toolResultParts: unknown[] = [];
-
-        for (const call of toolCallsThisTurn) {
-          console.log(`\n[Ducer] Ejecutando: ${call.name}...`);
-          const result = await this.dispatchTool(call);
-          console.log(`[Ducer] Resultado de ${call.name} obtenido.`);
-          toolResultParts.push({ text: `[RESULTADO TOOL ${call.name}]: ${result}` });
-        }
-
-        // El siguiente input para la IA son los resultados de las herramientas
-        currentInput = toolResultParts;
-      }
-    }
-
-    if (turnCount >= 10) {
-      console.warn('[Ducer] Límite de turnos alcanzado.');
-    }
-
-    return fullResponse;
+    return this.runToolAwareLoop(
+      [{ text: systemPrompt + '\n\nUSER: ' + query }],
+      sessionId,
+      toolDeclarations,
+      'Ducer Insight Engine',
+    );
   }
   /**
    * Dispatches music-specific tool calls.
@@ -256,6 +287,9 @@ export class DucerCore {
         }
 
         case 'install_producer_toolset': {
+          if (!this.scriptManager.supportsRemoteInstall()) {
+            return '[ScriptManager] Remote toolset installation is intentionally unavailable until a verified registry and integrity checks are implemented.';
+          }
           return await this.scriptManager.installToolset(
             args['author'] as string,
           );
@@ -380,19 +414,20 @@ export class DucerCore {
     mode: 'standard' | 'advanced' | 'lite',
     config: DucerConfig,
   ): Promise<string> {
+    logger.info('analysis_started', { filePath, mode });
     const validation = this.mediaHandler.validateFile(filePath);
     if (!validation.valid) {
       throw new Error(`Validation Error: ${validation.error}`);
     }
 
-    // Leer el archivo de audio y convertir a base64
+    // Read audio file and convert to base64
     const audioBytes = fs.readFileSync(filePath);
     const audioBase64 = audioBytes.toString('base64');
     const mediaType = getAudioMediaType(filePath);
     const fileName = path.basename(filePath);
 
     console.log(
-      `[Ducer] Audio cargado: ${fileName} (${(audioBytes.length / 1024 / 1024).toFixed(2)} MB, ${mediaType})`,
+      `[Ducer] Audio loaded: ${fileName} (${(audioBytes.length / 1024 / 1024).toFixed(2)} MB, ${mediaType})`,
     );
 
     const geminiClient = config.getGeminiClient();
@@ -406,16 +441,16 @@ export class DucerCore {
 
     const textPrompt = `${systemPrompt}
 
-Analiza este archivo de audio de manera técnica y artística en modo ${mode}.
-Archivo: ${fileName}
+Analyze this audio file technically and artistically in ${mode} mode.
+File: ${fileName}
 
-Proporciona:
-1. Análisis espectral y de dinámica
-2. Evaluación del balance tonal
-3. Observaciones de la mezcla y producción
-4. Recomendaciones concretas de mejora`;
+Provide:
+1. Spectral and dynamics analysis
+2. Tonal balance evaluation
+3. Mix and production observations
+4. Concrete improvement recommendations`;
 
-    // Construir mensaje multimodal: texto + audio como inline_data base64
+    // Build multimodal message: text + audio as inline_data base64
     const multimodalMessage = [
       {
         inlineData: {
@@ -426,77 +461,32 @@ Proporciona:
       { text: textPrompt },
     ];
 
-    let fullResponse = '';
-    let continueLoop = true;
+    this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
 
-    // Historial para loop multi-turn si hay tool-calls
-    const history: Array<{ role: string; parts: unknown[] }> = [
-      { role: 'user', parts: multimodalMessage },
-    ];
-
-    while (continueLoop) {
-      continueLoop = false;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const responseStream = (geminiClient as any).sendMessageStream(
-        history[history.length - 1].parts as unknown[],
-        new AbortController().signal,
-        sessionId,
-        toolDeclarations,
-        false,
-        'Ducer Audio Analyzer',
-      );
-
-      const toolCallsThisTurn: Array<{ name: string; args: string }> = [];
-      let assistantTextThisTurn = '';
-
-      for await (const event of responseStream) {
-        if (event.type === 'content') {
-          process.stdout.write(event.value);
-          fullResponse += event.value;
-          assistantTextThisTurn += event.value;
+    const response = await this.runToolAwareLoop(
+      multimodalMessage,
+      sessionId,
+      toolDeclarations,
+      'Ducer Audio Analyzer',
+      (call) => {
+        let callArgs: Record<string, unknown> = {};
+        try {
+          callArgs = JSON.parse(call.args);
+        } catch {
+          callArgs = {};
         }
-        if (event.type === 'tool-call') {
-          toolCallsThisTurn.push(event.value);
+        if (!callArgs['filePath']) {
+          callArgs['filePath'] = filePath;
         }
-      }
+        return {
+          name: call.name,
+          args: JSON.stringify(callArgs),
+        };
+      },
+    );
 
-      if (assistantTextThisTurn) {
-        history.push({
-          role: 'assistant',
-          parts: [{ text: assistantTextThisTurn }],
-        });
-      }
-
-      if (toolCallsThisTurn.length > 0) {
-        continueLoop = true;
-        const toolResultParts: unknown[] = [];
-
-        for (const call of toolCallsThisTurn) {
-          // Inyectar el filePath en los args de las tools que lo necesitan
-          let callArgs: Record<string, unknown> = {};
-          try {
-            callArgs = JSON.parse(call.args);
-          } catch {
-            /* usar vacío */
-          }
-          if (!callArgs['filePath']) callArgs['filePath'] = filePath;
-          const enrichedCall = {
-            name: call.name,
-            args: JSON.stringify(callArgs),
-          };
-
-          const result = await this.dispatchTool(enrichedCall);
-          toolResultParts.push({
-            text: `[TOOL: ${call.name}]\nRESULT: ${result}`,
-          });
-        }
-
-        history.push({ role: 'user', parts: toolResultParts });
-      }
-    }
-
-    return fullResponse;
+    logger.info('analysis_completed', { filePath, mode });
+    return response;
   }
 
   /**
@@ -516,10 +506,10 @@ Proporciona:
       [];
 
     console.log(
-      `\n[Ducer] Iniciando procesamiento por lotes de ${filePaths.length} archivos...`,
+      `\n[Ducer] Starting batch processing of ${filePaths.length} files...`,
     );
 
-    // Usamos allSettled para que un fallo individual no detenga todo el lote
+    // Using allSettled so individual failures don't stop the whole batch
     const tasks = filePaths.map(async (filePath) => {
       try {
         const response = await this.analyzeFile(filePath, mode, config);
@@ -536,7 +526,7 @@ Proporciona:
       if (res.status === 'fulfilled') {
         results.push(res.value);
       } else {
-        // Esto no debería pasar con el try/catch interno pero por seguridad
+        // This shouldn't happen with the internal try/catch, but for safety
         results.push({
           file: 'Unknown',
           response: `Fatal error in task`,
@@ -547,9 +537,133 @@ Proporciona:
 
     const duration = (Date.now() - startTime) / 1000;
     const successCount = results.filter((r) => r.success).length;
-    const summary = `${successCount}/${filePaths.length} archivos analizados correctamente en ${duration.toFixed(1)}s.`;
+    const summary = `${successCount}/${filePaths.length} files analyzed successfully in ${duration.toFixed(1)}s.`;
 
     console.log(`\n[Ducer] Batch Summary: ${summary}`);
     return { results, summary, totalDurationSeconds: duration };
+  }
+
+  async separateStems(
+    filePath: string,
+    options: StemSeparationOptions,
+  ): Promise<StemSeparationResult> {
+    logger.info('stem_separation_started', { filePath, backend: options.backend });
+    const validation =
+      this.mediaHandler.validateAudioFileForLocalProcessing(filePath);
+    if (!validation.valid) {
+      throw new Error(`Validation Error: ${validation.error}`);
+    }
+
+    console.log(
+      `[Ducer] Starting stem separation (${options.backend}/${options.preset ?? 'standard'}): ${path.basename(filePath)}...`,
+    );
+    const result = await this.stemSeparationManager.separate(filePath, options);
+    logger.info('stem_separation_completed', { filePath, backend: options.backend });
+    return result;
+  }
+
+  async separateMultipleStems(
+    filePaths: string[],
+    options: StemSeparationOptions,
+  ): Promise<{
+    results: Array<{
+      file: string;
+      success: boolean;
+      result?: StemSeparationResult;
+      error?: string;
+    }>;
+    summary: string;
+  }> {
+    const tasks = filePaths.map(async (filePath) => {
+      try {
+        const result = await this.separateStems(filePath, options);
+        return { file: filePath, success: true, result };
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : String(error);
+        return { file: filePath, success: false, error: message };
+      }
+    });
+
+    const results = await Promise.all(tasks);
+    const successCount = results.filter((item) => item.success).length;
+    const summary = `${successCount}/${filePaths.length} files processed successfully for stem separation.`;
+
+    console.log(`\n[Ducer] Stem Separation Summary: ${summary}`);
+    return { results, summary };
+  }
+
+  /**
+   * Scans a directory for valid audio files.
+   */
+  private getAudioFilesFromDirectory(dirPath: string): string[] {
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+      return [];
+    }
+
+    return fs
+      .readdirSync(dirPath)
+      .map((f) => path.join(dirPath, f))
+      .filter((p) => this.mediaHandler.validateFile(p).valid);
+  }
+
+  /**
+   * Analyzes all stems in a directory and provides an aggregated report.
+   */
+  async analyzeStemsDirectory(
+    dirPath: string,
+    mode: 'standard' | 'advanced' | 'lite',
+    config: DucerConfig,
+  ): Promise<{
+    results: Array<{ file: string; response: string; success: boolean }>;
+    summary: string;
+    comparativeReport?: string;
+  }> {
+    const filePaths = this.getAudioFilesFromDirectory(dirPath);
+    if (filePaths.length === 0) {
+      throw new Error(`No valid audio files found in directory: ${dirPath}`);
+    }
+
+    console.log(`[Ducer] Analyzing ${filePaths.length} stems in: ${path.basename(dirPath)}`);
+    const batch = await this.analyzeMultiple(filePaths, mode, config);
+
+    let comparativeReport: string | undefined;
+    if (mode === 'advanced' && batch.results.some((r) => r.success)) {
+      comparativeReport = await this.generateComparativeReport(batch.results, config);
+    }
+
+    return { ...batch, comparativeReport };
+  }
+
+  /**
+   * Generates a comparative summary of multiple analyzed stems.
+   */
+  private async generateComparativeReport(
+    results: Array<{ file: string; response: string; success: boolean }>,
+    config: DucerConfig,
+  ): Promise<string> {
+    const geminiClient = config.getGeminiClient();
+    const sessionId = config.getSessionId();
+    this.currentGeminiClient = geminiClient as any;
+
+    const context = results
+      .filter((r) => r.success)
+      .map((r) => `FILE: ${path.basename(r.file)}\nANALYSIS: ${r.response}`)
+      .join('\n\n---\n\n');
+
+    const prompt = `
+Act as a Senior Mix Engineer. Based on the individual analyses of these stems, generate a **Comparative Mix Report**.
+Identify frequency conflicts between instruments, potential phase issues, and how these elements should fit into the stereo field.
+
+STEM DATA:
+${context}
+`;
+
+    return this.runToolAwareLoop(
+      [{ text: prompt }],
+      sessionId,
+      [], // No tools needed for summary
+      'Ducer Comparative Reporter',
+    );
   }
 }

@@ -1991,6 +1991,56 @@ const SETTINGS_SCHEMA = {
     },
   },
 
+  ducer: {
+    type: 'object',
+    label: 'Ducer',
+    category: 'Music',
+    requiresRestart: false,
+    default: {},
+    description: 'Ducer Production Layer settings.',
+    showInDialog: true,
+    properties: {
+      background_jobs: {
+        type: 'object',
+        label: 'Background Jobs',
+        category: 'Music',
+        requiresRestart: false,
+        default: {},
+        description: 'Settings for Ducer background job queue.',
+        showInDialog: true,
+        properties: {
+          enabled: {
+            type: 'boolean',
+            label: 'Enable Background Jobs',
+            category: 'Music',
+            requiresRestart: false,
+            default: true,
+            description: 'Enable the background job queue for long operations.',
+            showInDialog: true,
+          },
+          max_parallel: {
+            type: 'number',
+            label: 'Max Parallel Jobs',
+            category: 'Music',
+            requiresRestart: false,
+            default: 2,
+            description: 'Maximum number of jobs to run in parallel.',
+            showInDialog: true,
+          },
+          queue_file: {
+            type: 'string',
+            label: 'Queue File Path',
+            category: 'Music',
+            requiresRestart: false,
+            default: undefined as string | undefined,
+            description: 'Path to the JSON file storing the job queue.',
+            showInDialog: false,
+          },
+        },
+      },
+    },
+  },
+
   advanced: {
     type: 'object',
     label: 'Advanced',

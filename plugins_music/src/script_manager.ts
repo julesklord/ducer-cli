@@ -17,7 +17,14 @@ export class ScriptManager {
 
   constructor(baseDir: string = process.cwd()) {
     this.scriptsDir = path.join(baseDir, 'scripts', 'lua');
-    // TODO: When registry is ready, implement actual fetching logic.
+  }
+
+  /**
+   * Remote toolset installation is intentionally disabled until there is a
+   * real registry and integrity verification flow behind it.
+   */
+  supportsRemoteInstall(): boolean {
+    return false;
   }
 
   /**
@@ -27,33 +34,7 @@ export class ScriptManager {
    * fetching from the remote registry URL is not yet implemented.
    */
   async installToolset(authorName: string): Promise<string> {
-    const targetPath = path.join(this.scriptsDir, authorName);
-
-    if (fs.existsSync(targetPath)) {
-      return `[ScriptManager] Toolset for "${authorName}" is already installed.`;
-    }
-
-    console.log(`[ScriptManager] Fetching toolset for: ${authorName}...`);
-
-    try {
-      // TODO: Implement actual fetching from registryUrl when available.
-      // For now, we simulate by creating the folder structure locally.
-      // Future implementation options:
-      // - git sparse-checkout for selective cloning
-      // - Fetch and extract ZIP releases
-      // - npm-style package registry
-      
-      if (!fs.existsSync(this.scriptsDir)) {
-        fs.mkdirSync(this.scriptsDir, { recursive: true });
-      }
-
-      fs.mkdirSync(targetPath, { recursive: true });
-      
-      return `✅ Success: Toolset for "${authorName}" initialized. (Local placeholder only - remote fetching not yet implemented).`;
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      return `❌ Error installing toolset: ${msg}`;
-    }
+    return `[ScriptManager] Remote toolset installation for "${authorName}" is disabled until the registry, download, and integrity verification flow are implemented.`;
   }
 
   /**

@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * @license
  * Copyright 2025 Google LLC
@@ -117,8 +118,8 @@ export class ReaperBridgeClient implements DawBridge {
   public async validateAction(
     actionId: string | number,
   ): Promise<ActionValidationResult> {
-    // Usamos Lua para validar. El script escribe directamente al response file
-    // para ser consistente con el protocolo del bridge.
+    // Use Lua for validation. The script writes directly to the response file
+    // to be consistent with the bridge protocol.
     const luaValidator = `
     local id_str = "${actionId}"
     local id_num = tonumber(id_str)
@@ -132,27 +133,27 @@ export class ReaperBridgeClient implements DawBridge {
       end
     end
     local result = name or "INVALID"
-    -- Escribir al response file directamente
+    -- Write to response file directly
     local resp_path = reaper.GetResourcePath() .. "/Scripts/ducer_response.txt"
     local f = io.open(resp_path, "w")
     if f then f:write(result); f:close() end
   `;
 
     try {
-      // Escribir el Lua al cmd file y esperar la respuesta en el resp file
+      // Write Lua to cmd file and wait for response in resp file
       if (!this.isBridgeAvailable()) {
-        // Sin bridge, intentar Web API con un action de prueba
+        // No bridge, try Web API with a test action
         const webResult = await this.tryWebControl('');
         if (webResult !== null) {
-          // Si el Web API responde, asumimos que el entorno está activo
-          // No podemos validar el ID específico sin Lua, retornamos true conservador
+          // If Web API responds, assume the environment is active
+          // Cannot validate specific ID without Lua, return conservative true
           return { valid: true, name: `WebAPI:${actionId}` };
         }
         return { valid: false };
       }
 
       await this.executeLua(luaValidator);
-      // pollResponse() leerá el archivo que el Lua escribió
+      // pollResponse() will read the file that the Lua script wrote
       const result = await this.pollResponse(3000);
 
       return {
@@ -187,6 +188,7 @@ export class ReaperBridgeClient implements DawBridge {
 
     // Write command atomically
     ReaperBridgeClient.atomicWriteSync(ReaperBridgeClient.CMD_FILE, command);
+    logger.info('reaper_command_sent', { command });
 
     // Poll for response
     return this.pollResponse();
@@ -271,6 +273,7 @@ export class ReaperBridgeClient implements DawBridge {
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
+    logger.error('reaper_command_failed', { error: 'Timeout waiting for REAPER response.' });
     throw new Error('Timeout waiting for REAPER response.');
   }
 }

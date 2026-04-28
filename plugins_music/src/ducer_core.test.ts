@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DucerCore } from './ducer_core';
 import fs from 'node:fs';
+import { MusicToolsManager } from './tools_manager';
 
 // Mock everything
 vi.mock('node:fs', () => ({
@@ -99,5 +100,24 @@ describe('DucerCore', () => {
 
     expect(result).toContain('Ducer has learned');
     expect(fs.writeFileSync).toHaveBeenCalled();
+  });
+
+  it('should report toolset installation as intentionally unavailable', async () => {
+    const call = {
+      name: 'install_producer_toolset',
+      args: JSON.stringify({ author: 'X-Raym' }),
+    };
+    const result = await (ducer as any).dispatchTool(call);
+
+    expect(result).toContain('intentionally unavailable');
+  });
+
+  it('should only expose implemented tool declarations', () => {
+    const tools = new MusicToolsManager().getMusicToolsDeclarations();
+    const names = tools.map((tool) => tool.name);
+
+    expect(names).not.toContain('analyze_frequencies');
+    expect(names).not.toContain('suggest_chords');
+    expect(names).not.toContain('install_producer_toolset');
   });
 });

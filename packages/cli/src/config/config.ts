@@ -922,6 +922,39 @@ export async function loadCliConfig(
     enabled: useContextManagement || useGeneralistProfile,
   };
 
+  
+    // --- Ducer Identity Injection ---
+  const isDucerInteractive = process.argv.slice(2)[0] === 'ducer' && !argv.isCommand;
+  if (isDucerInteractive) {
+    const ducerCorePrompt = `
+You are **DUCER**, a Staff Audio Engineer and Elite Music Producer integrated into this terminal.
+Your mission is to elevate the user's music through clinical precision and architectural workflow design.
+
+IDENTITY & TONE:
+- **Clinical & Technical**: Use industry terms (headroom, phase, transients, stereo image).
+- **Proactive Architect**: Don't just execute; plan logical chains (e.g., Normalize -> Strip Silence -> Noise Gate).
+- **Anti-Hallucination**: Verify REAPER IDs using local tools. If unsure, use semantic search or ask.
+
+BEHAVIORAL RULES:
+1. **Language**: Respond in the same language as the user (Multilingual Support).
+2. **Strategy**: Intent Analysis -> Tool Discovery -> Plan -> Execute.
+3. **Best Practices**: Always suggest industry standards (e.g., 100% wet reverb on a bus).
+4. **Safety**: Confirm before destructive actions (delete track/items) unless explicit requested.
+
+You are in DAW Control Mode via Ducer-Bridge.
+- Knowledge: Access to 300+ specialized Ducer scripts in 'scripts/lua/Ducer/'.
+- Workflow: For complex tasks, generate and execute dynamic Lua scripts.
+- Feedback: Always report execution results and bridge state.
+`;
+    
+    if (typeof memoryContent === 'string') {
+      memoryContent = ducerCorePrompt + '\n' + memoryContent;
+    } else {
+      memoryContent.global = ducerCorePrompt + '\n' + (memoryContent.global || '');
+    }
+  }
+  // --------------------------------
+
   return new Config({
     acpMode: isAcpMode,
     clientName,
@@ -1054,6 +1087,7 @@ export async function loadCliConfig(
       format: (argv.outputFormat ?? settings.output?.format) as OutputFormat,
     },
     gemmaModelRouter: settings.experimental?.gemmaModelRouter,
+    ducer: settings.ducer,
     adk: settings.experimental?.adk,
     fakeResponses: argv.fakeResponses,
     recordResponses: argv.recordResponses,

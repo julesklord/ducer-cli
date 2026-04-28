@@ -23,6 +23,7 @@ describe('ReaperBridgeClient', () => {
     (fs.existsSync as any).mockReturnValue(true);
     (fs.readFileSync as any).mockReturnValue('OK');
     (fs.writeFileSync as any).mockImplementation(() => {});
+    (fs.renameSync as any).mockImplementation(() => {});
 
     // Default fetch mock (success)
     global.fetch = vi.fn().mockResolvedValue({
@@ -46,6 +47,7 @@ describe('ReaperBridgeClient', () => {
     const result = await client.executeAction('40044');
 
     expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(fs.renameSync).toHaveBeenCalled();
     expect(result).toBe('OK');
   });
 
