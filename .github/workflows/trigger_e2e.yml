@@ -18,7 +18,7 @@ on:
 
 jobs:
   save_repo_name:
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: github.repository == github.repository
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Save Repo name'
@@ -35,7 +35,7 @@ jobs:
           path: 'pr/'
   trigger_e2e:
     name: 'Trigger e2e'
-    if: "github.repository == 'julesklord/ducer-cli'"
+    if: github.repository == github.repository
     runs-on: 'ubuntu-latest'
     steps:
       - id: 'trigger-e2e'
