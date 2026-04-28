@@ -810,7 +810,9 @@ class EditToolInvocation
             this.params.old_string = editData.currentContent ?? '';
             this.params.new_string = result.content;
             // Update lastReadHash to match the content we just accepted from the IDE
-            this.lastReadHash = hashContent(result.content.replace(/\r\n/g, '\n'));
+            this.lastReadHash = hashContent(
+              result.content.replace(/\r\n/g, '\n'),
+            );
           }
         }
       },
