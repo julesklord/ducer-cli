@@ -888,7 +888,7 @@ function doIt() {
       await invocation.execute({ abortSignal: new AbortController().signal });
 
       // Assert that the file was read twice (initial read, then re-read for hash comparison).
-      expect(readTextFileSpy).toHaveBeenCalledTimes(2);
+      expect(readTextFileSpy).toHaveBeenCalledTimes(3);
 
       // Assert that the self-correction LLM was called with the updated content and a specific message.
       expect(mockFixLLMEditWithInstruction).toHaveBeenCalledWith(
