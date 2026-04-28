@@ -27,6 +27,22 @@
       --white: #f0ede6;
       --font-display: 'Bebas Neue', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
+      --terminal-bg: #0a0a0c;
+    }
+
+    body.light-mode {
+      --black: #f0f0f2;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --border: #d1d1d6;
+      --green: #1a7f37;
+      --green-dim: #dafbe1;
+      --amber: #9a6700;
+      --red: #cf222e;
+      --text: #24292f;
+      --muted: #6e7781;
+      --white: #000000;
+      --terminal-bg: #f6f8fa;
     }
 
     html {
@@ -232,7 +248,7 @@
 
     /* ─── TERMINAL ─── */
     .terminal {
-      background: #0a0a0c;
+      background: var(--terminal-bg);
       border: 1px solid var(--border);
       border-radius: 3px;
       padding: 1rem;
@@ -392,6 +408,9 @@
   <div class="header">
     <div class="header-logo">DUCER</div>
     <div class="header-status">
+      <div class="status-badge" id="theme-toggle" style="cursor: pointer;" title="Cambiar Tema">
+        <span id="theme-icon">🌙</span>
+      </div>
       <div class="status-badge">
         <div class="status-dot"></div>
         <span id="server-status">Conectando...</span>
@@ -515,6 +534,25 @@
   </div>
 
   <script>
+    // ──── THEME TOGGLE ────
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        themeIcon.textContent = '☀️';
+      }
+    }
+
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      themeIcon.textContent = isLight ? '☀️' : '🌙';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    });
+
     // ──── SOCKET.IO CONNECTION ────
     const socket = io();
     let currentTaskId = null;
@@ -712,6 +750,7 @@
     });
 
     // Initial load
+    initTheme();
     fetchStatus();
     fetchTaskHistory();
 
