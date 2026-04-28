@@ -1,6 +1,6 @@
 {
     "name":  "@google/gemini-cli-plugin-music",
-    "version":  "0.40.0",
+    "version":  "1.0.0-alpha.1",
     "private":  true,
     "type":  "module",
     "main":  "dist/router.js",

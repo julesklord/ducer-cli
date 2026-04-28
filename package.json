@@ -1,6 +1,6 @@
 {
   "name": "@google/gemini-cli",
-  "version": "0.41.0",
+  "version": "1.0.0-alpha.1",
   "description": "Ducer - The Advanced Music Producer Edition of Gemini CLI",
   "engines": {
     "node": ">=20.0.0"
