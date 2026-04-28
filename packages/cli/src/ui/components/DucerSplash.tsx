@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import { Box, Text } from 'ink';
 import { ducerBrandingLogo, spectrumSplash } from './DucerAscii.js';
 import { ThemedGradient } from './ThemedGradient.js';
@@ -13,58 +13,48 @@ interface DucerSplashProps {
   version: string;
 }
 
-export const DucerSplash: React.FC<DucerSplashProps> = ({ version }) => {
+export const DucerSplash: FC<DucerSplashProps> = ({ version }) => {
   const [loadingText, setLoadingText] = useState('Initializing Audio Engine...');
   const [dots, setDots] = useState('');
 
   useEffect(() => {
-    const messages = [
-      'Initializing Audio Engine...',
-      'Booting Gemini AI Core...',
-      'Syncing DAW Workflows...',
-      'Calibrating Audio Analysis...',
-      'Ducer Ready.'
-    ];
-    let msgIndex = 0;
-    
-    const msgInterval = setInterval(() => {
-      msgIndex = (msgIndex + 1) % messages.length;
-      setLoadingText(messages[msgIndex]);
-    }, 400);
+    const textInterval = setInterval(() => {
+      setLoadingText((prev) => {
+        if (prev.includes('Audio')) return 'Loading Music Plugins...';
+        if (prev.includes('Plugins')) return 'Connecting to DAW...';
+        return 'Initializing Audio Engine...';
+      });
+    }, 2000);
 
     const dotsInterval = setInterval(() => {
-      setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
-    }, 200);
+      setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
+    }, 500);
 
     return () => {
-      clearInterval(msgInterval);
+      clearInterval(textInterval);
       clearInterval(dotsInterval);
     };
   }, []);
 
   return (
-    <Box 
-      flexDirection="column" 
-      alignItems="center" 
-      justifyContent="center" 
-      width="100%" 
-      paddingY={2}
-    >
+    <Box flexDirection="column" alignItems="center" paddingY={2}>
       <ThemedGradient>
-        <Text bold>{ducerBrandingLogo}</Text>
+        <Text>{ducerBrandingLogo}</Text>
       </ThemedGradient>
-      
-      <Box marginTop={1} marginBottom={1}>
-        <Text color="cyan">{spectrumSplash}</Text>
+      <Box marginTop={1}>
+        <Text color="cyan" bold>
+          DUCER CLI
+        </Text>
+        <Text color="gray"> v{version}</Text>
       </Box>
-
-      <Box flexDirection="column" alignItems="center">
-        <Text dimColor>Producer Edition v{version}</Text>
-        <Box marginTop={1}>
-          <Text italic color="yellow">
-            {loadingText}{dots}
-          </Text>
-        </Box>
+      <Box marginTop={2}>
+        <Text color="magenta">{spectrumSplash}</Text>
+      </Box>
+      <Box marginTop={2}>
+        <Text color="yellow">
+          {loadingText}
+          {dots}
+        </Text>
       </Box>
     </Box>
   );

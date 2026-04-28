@@ -52,6 +52,8 @@ export default tseslint.config(
   {
     // Global ignores
     ignores: [
+    '.gemini-linters/**',
+    '.gemini-linters/**',
       '**/node_modules/**',
       'eslint.config.js',
       'packages/**/dist/**',
@@ -214,6 +216,7 @@ export default tseslint.config(
     // Rules that only apply to product code
     files: ['packages/*/src/**/*.{ts,tsx}'],
     ignores: ['**/*.test.ts', '**/*.test.tsx', 'packages/*/src/test-utils/**'],
+    '.gemini-linters/**',
     rules: {
       '@typescript-eslint/no-unsafe-type-assertion': 'error',
       '@typescript-eslint/no-unsafe-assignment': 'error',

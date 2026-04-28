@@ -688,7 +688,7 @@ export interface ConfigParameters {
   output?: OutputSettings;
   gemmaModelRouter?: GemmaModelRouterSettings;
   ducer?: DucerSettings;
-  
+
   adk?: ADKSettings;
   disableModelRouterForAuth?: AuthType[];
   continueOnFailedApiCall?: boolean;
@@ -799,7 +799,7 @@ export class Config implements McpContext, AgentLoopContext {
   private readonly mcpEnabled: boolean;
   private readonly extensionsEnabled: boolean;
   private mcpServers: Record<string, MCPServerConfig> | undefined;
-  
+
   private readonly mcpEnablementCallbacks?: McpEnablementCallbacks;
   private userMemory: string | HierarchicalMemory;
   private geminiMdFileCount: number;
@@ -1431,7 +1431,7 @@ export class Config implements McpContext, AgentLoopContext {
     this.modelRouterService = new ModelRouterService(this);
   }
 
-    get ducerSettings(): DucerSettings {
+  get ducerSettings(): DucerSettings {
     return this.ducer;
   }
   get config(): Config {
@@ -2458,9 +2458,8 @@ export class Config implements McpContext, AgentLoopContext {
     if (this.experimentalJitContext && this.memoryContextManager) {
       await this.memoryContextManager.refresh();
     } else {
-      const { refreshServerHierarchicalMemory } = await import(
-        '../utils/memoryDiscovery.js'
-      );
+      const { refreshServerHierarchicalMemory } =
+        await import('../utils/memoryDiscovery.js');
       await refreshServerHierarchicalMemory(this);
     }
     if (this._geminiClient?.isInitialized()) {

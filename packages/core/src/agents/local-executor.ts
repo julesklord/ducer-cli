@@ -1126,7 +1126,9 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
         }
       } catch (error: unknown) {
         // Ignore errors during formatting for activity emission, but log them for debugging
-        debugLogger.debug(`[LocalAgentExecutor] Error building tool invocation for activity emission: ${error instanceof Error ? error.message : String(error)}`);
+        debugLogger.debug(
+          `[LocalAgentExecutor] Error building tool invocation for activity emission: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
 
       this.emitActivity('TOOL_CALL_START', {
