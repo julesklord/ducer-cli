@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ducer — Web Controller</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: break-word;
+    }
+
+    :root {
+      --black: #070708;
+      --surface: #0d0d0f;
+      --card: #111114;
+      --border: #1c1c22;
+      --green: #00e676;
+      --green-dim: #00753c;
+      --amber: #ffab00;
+      --red: #ff3d3d;
+      --text: #d0ccc0;
+      --muted: #565660;
+      --white: #f0ede6;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.04) 2px, rgba(0, 0, 0, 0.04) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ─── LAYOUT ─── */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7, 7, 8, 0.95);
+      backdrop-filter: blur(12px);
+    }
+
+    .header-logo {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 0.1em;
+      color: var(--white);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .content {
+      margin-top: 4rem;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
+      color: var(--white);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    /* ─── CONTROL PANEL ─── */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .btn.active {
+      background: var(--green);
+      color: var(--black);
+      border-color: var(--green);
+    }
+
+    input[type='text'],
+    input[type='file'] {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      margin-bottom: 0.8rem;
+    }
+
+    input[type='text']:focus,
+    input[type='file']:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    /* ─── METRICS GRID ─── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 500;
+      color: var(--green);
+      font-family: var(--font-mono);
+    }
+
+    .metric-value.warn {
+      color: var(--amber);
+    }
+
+    .metric-value.error {
+      color: var(--red);
+    }
+
+    /* ─── TERMINAL ─── */
+    .terminal {
+      background: #0a0a0c;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+    }
+
+    .terminal-line {
+      margin: 0.2rem 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .terminal-line.info {
+      color: #00ff00;
+    }
+
+    .terminal-line.error {
+      color: #ff3d3d;
+    }
+
+    .terminal-line.warn {
+      color: #ffab00;
+    }
+
+    /* ─── HISTORY ─── */
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .task-item:hover {
+      background: var(--surface);
+    }
+
+    .task-item.running {
+      background: rgba(0, 230, 118, 0.05);
+      border-left: 2px solid var(--green);
+      padding-left: calc(0.8rem - 2px);
+    }
+
+    .task-item.success {
+      background: rgba(0, 230, 118, 0.02);
+    }
+
+    .task-item.error {
+      background: rgba(255, 61, 61, 0.05);
+    }
+
+    .task-info {
+      flex: 1;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .task-type {
+      font-weight: 500;
+      min-width: 70px;
+      color: var(--white);
+    }
+
+    .task-time {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .task-status {
+      font-size: 0.65rem;
+      padding: 0.3rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 1px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .task-status.running {
+      color: var(--green);
+      border-color: var(--green-dim);
+    }
+
+    .task-status.success {
+      color: var(--green);
+    }
+
+    .task-status.error {
+      color: var(--red);
+    }
+
+    .task-duration {
+      font-size: 0.65rem;
+      color: var(--muted);
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .terminal {
+        height: 300px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .header-status {
+        flex-wrap: wrap;
+      }
+
+      .controls {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .container {
+        padding: 4.5rem 0.8rem 1rem;
+      }
+    }
+
+    /* ─── SPINNER ─── */
+    .spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 1px solid var(--green-dim);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">DUCER</div>
+    <div class="header-status">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="server-status">Conectando...</span>
+      </div>
+      <div class="status-badge">
+        <span id="active-tasks">0 tareas</span>
+      </div>
+      <div class="status-badge">
+        <span id="memory-usage">0 MB</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="container">
+    <!-- LEFT COLUMN: CONTROL + TERMINAL -->
+    <div>
+      <!-- CONTROL PANEL -->
+      <div class="panel">
+        <div class="panel-title">Control</div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.4rem;">
+            Archivo
+          </label>
+          <input type="text" id="file-input" placeholder="/ruta/a/track.wav" value="current_track.wav">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.4rem;">
+            Query personalizado (opcional)
+          </label>
+          <input type="text" id="custom-query" placeholder="ej: normaliza este track en REAPER...">
+        </div>
+
+        <div class="controls">
+          <button class="btn" data-task="normalize">Normalizar</button>
+          <button class="btn" data-task="remix">Remix</button>
+          <button class="btn" data-task="analyze">Analizar</button>
+          <button class="btn" data-task="custom">Custom</button>
+        </div>
+      </div>
+
+      <!-- METRICS -->
+      <div class="metrics">
+        <div class="metric-card">
+          <div class="metric-label">Uptime</div>
+          <div class="metric-value" id="uptime">0s</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Completadas</div>
+          <div class="metric-value" id="completed">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Errores</div>
+          <div class="metric-value" id="failed">0</div>
+        </div>
+      </div>
+
+      <!-- TERMINAL -->
+      <div class="panel">
+        <div class="panel-title">Terminal</div>
+        <div class="terminal" id="terminal"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: HISTORY + ACTIVITY -->
+    <div>
+      <!-- TASK HISTORY -->
+      <div class="panel">
+        <div class="panel-title">Historial</div>
+        <ul class="task-list" id="task-history">
+          <li style="padding: 1rem; color: var(--muted); text-align: center;">
+            Esperando tareas...
+          </li>
+        </ul>
+      </div>
+
+      <!-- QUICK STATS -->
+      <div class="panel">
+        <div class="panel-title">Estadísticas</div>
+        <div style="display: grid; gap: 0.8rem;">
+          <div>
+            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+              Tasa de éxito
+            </div>
+            <div id="success-rate" style="font-size: 1.4rem; color: var(--green); font-weight: 500;">—</div>
+          </div>
+          <div>
+            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+              Promedio duración
+            </div>
+            <div id="avg-duration" style="font-size: 1.4rem; color: var(--text); font-weight: 500;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEYBOARD SHORTCUTS -->
+      <div class="panel">
+        <div class="panel-title">Atajos</div>
+        <div style="font-size: 0.7rem; line-height: 1.8; color: var(--muted);">
+          <div><strong>Ctrl+Enter</strong> → Ejecutar query</div>
+          <div><strong>Ctrl+L</strong> → Limpiar terminal</div>
+          <div><strong>Ctrl+N</strong> → Normalizar</div>
+          <div><strong>Ctrl+R</strong> → Remix</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ──── SOCKET.IO CONNECTION ────
+    const socket = io();
+    let currentTaskId = null;
+
+    socket.on('connect', () => {
+      updateServerStatus('Conectado', true);
+    });
+
+    socket.on('disconnect', () => {
+      updateServerStatus('Desconectado', false);
+    });
+
+    // Real-time task output
+    socket.on('task_output', (msg) => {
+      appendToTerminal(msg.data, msg.type);
+    });
+
+    socket.on('task_complete', (msg) => {
+      updateTerminalStatus('complete', msg.success, msg.duration_ms);
+      fetchTaskHistory();
+      fetchStatus();
+    });
+
+    socket.on('task_error', (msg) => {
+      appendToTerminal(`ERROR: ${msg.error}`, 'error');
+      fetchStatus();
+    });
+
+    // ──── UI FUNCTIONS ────
+    function updateServerStatus(status, connected) {
+      const elem = document.getElementById('server-status');
+      elem.textContent = status;
+      elem.parentElement.style.borderColor = connected ? 'var(--green-dim)' : 'var(--red)';
+    }
+
+    function appendToTerminal(text, type = 'info') {
+      const terminal = document.getElementById('terminal');
+      const line = document.createElement('div');
+      line.className = `terminal-line ${type}`;
+      line.textContent = text;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+
+      // Keep max 1000 lines
+      while (terminal.children.length > 1000) {
+        terminal.removeChild(terminal.firstChild);
+      }
+    }
+
+    function updateTerminalStatus(status, success, duration) {
+      if (status === 'complete') {
+        const color = success ? 'var(--green)' : 'var(--red)';
+        const icon = success ? '✅' : '❌';
+        appendToTerminal(`\n${icon} Task completed in ${(duration / 1000).toFixed(1)}s\n`, success ? 'info' : 'error');
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+
+        document.getElementById('uptime').textContent = `${Math.floor(data.uptime_seconds / 60)}m`;
+        document.getElementById('completed').textContent = data.total_tasks_completed;
+        document.getElementById('failed').textContent = data.total_tasks_failed;
+        document.getElementById('active-tasks').textContent = `${data.active_tasks.length} tareas`;
+        document.getElementById('memory-usage').textContent = `${data.memory_usage_mb} MB`;
+
+        // Update success rate
+        const total = data.total_tasks_completed + data.total_tasks_failed;
+        if (total > 0) {
+          const rate = ((data.total_tasks_completed / total) * 100).toFixed(0);
+          document.getElementById('success-rate').textContent = `${rate}%`;
+        }
+      } catch (err) {
+        console.error('Error fetching status:', err);
+      }
+    }
+
+    async function fetchTaskHistory() {
+      try {
+        const res = await fetch('/api/tasks/history?limit=10');
+        const tasks = await res.json();
+
+        const historyEl = document.getElementById('task-history');
+        historyEl.innerHTML = '';
+
+        if (tasks.length === 0) {
+          historyEl.innerHTML = '<li style="padding: 1rem; color: var(--muted); text-align: center;">Sin historial</li>';
+          return;
+        }
+
+        tasks.forEach((task) => {
+          const item = document.createElement('li');
+          item.className = `task-item ${task.status}`;
+
+          const statusColor = {
+            success: 'success',
+            failed: 'error',
+            error: 'error',
+            running: 'running',
+          }[task.status];
+
+          item.innerHTML = `
+            <div class="task-info">
+              <span class="task-type">${task.type.toUpperCase()}</span>
+              <span class="task-time">${new Date(task.timestamp).toLocaleTimeString()}</span>
+            </div>
+            <span class="task-status ${statusColor}">${task.status}</span>
+            <span class="task-duration">${(task.duration_ms / 1000).toFixed(1)}s</span>
+          `;
+
+          historyEl.appendChild(item);
+        });
+      } catch (err) {
+        console.error('Error fetching history:', err);
+      }
+    }
+
+    async function executeTask(taskType) {
+      const filePath = document.getElementById('file-input').value || 'track.wav';
+
+      appendToTerminal(`\n[Ducer] Starting ${taskType} task...`, 'info');
+
+      try {
+        const res = await fetch(`/api/tasks/${taskType}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_path: filePath }),
+        });
+
+        const data = await res.json();
+        currentTaskId = data.task_id;
+      } catch (err) {
+        appendToTerminal(`ERROR: ${err.message}`, 'error');
+      }
+    }
+
+    async function executeCustom() {
+      const query = document.getElementById('custom-query').value;
+      if (!query) return alert('Por favor ingresa una query');
+
+      appendToTerminal(`\n[Ducer] Custom query...`, 'info');
+
+      try {
+        const res = await fetch('/api/tasks/custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await res.json();
+        currentTaskId = data.task_id;
+      } catch (err) {
+        appendToTerminal(`ERROR: ${err.message}`, 'error');
+      }
+    }
+
+    // ──── EVENT LISTENERS ────
+    document.querySelectorAll('.btn[data-task]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const task = btn.dataset.task;
+        if (task === 'custom') {
+          executeCustom();
+        } else {
+          executeTask(task);
+        }
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'Enter') {
+          const customQuery = document.getElementById('custom-query');
+          if (customQuery.value) executeCustom();
+        } else if (e.key === 'l') {
+          e.preventDefault();
+          document.getElementById('terminal').innerHTML = '';
+        } else if (e.key === 'n') {
+          e.preventDefault();
+          executeTask('normalize');
+        } else if (e.key === 'r') {
+          e.preventDefault();
+          executeTask('remix');
+        }
+      }
+    });
+
+    // Initial load
+    fetchStatus();
+    fetchTaskHistory();
+
+    // Refresh status every 5 seconds
+    setInterval(fetchStatus, 5000);
+
+    // Refresh history every 3 seconds
+    setInterval(fetchTaskHistory, 3000);
+  </script>
+</body>
+</html>

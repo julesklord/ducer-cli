@@ -65,6 +65,7 @@ export default tseslint.config(
       '**/*.d.ts',
       'scripts/**',
       'ducer-skills/**',
+      'web-controller/**',
     ],
   },
   eslint.configs.recommended,
