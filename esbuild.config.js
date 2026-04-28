@@ -64,7 +64,6 @@ const external = [
   '@lydell/node-pty-win32-x64',
   '@github/keytar',
   '@google/gemini-cli-devtools',
-  '@google/gemini-cli-plugin-music',
 ];
 
 const baseConfig = {
