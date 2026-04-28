@@ -882,13 +882,14 @@ function doIt() {
       const readTextFileSpy = vi
         .spyOn(fileSystemService, 'readTextFile')
         .mockResolvedValueOnce(initialContent) // First call in `calculateEdit`
-        .mockResolvedValueOnce(externallyModifiedContent); // Second call in `attemptSelfCorrection`
+        .mockResolvedValueOnce(externallyModifiedContent) // Second call
+        .mockResolvedValueOnce(externallyModifiedContent); // Third call
 
       const invocation = tool.build(params);
       await invocation.execute({ abortSignal: new AbortController().signal });
 
       // Assert that the file was read twice (initial read, then re-read for hash comparison).
-      expect(readTextFileSpy).toHaveBeenCalledTimes(2);
+      expect(readTextFileSpy).toHaveBeenCalledTimes(3);
 
       // Assert that the self-correction LLM was called with the updated content and a specific message.
       expect(mockFixLLMEditWithInstruction).toHaveBeenCalledWith(

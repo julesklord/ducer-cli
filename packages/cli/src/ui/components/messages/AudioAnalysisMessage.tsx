@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import { type FC } from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../../semantic-colors.js';
 import { ThemedGradient } from '../ThemedGradient.js';
@@ -17,7 +17,7 @@ interface AudioAnalysisMessageProps {
   summary: string;
 }
 
-export const AudioAnalysisMessage: React.FC<AudioAnalysisMessageProps> = ({
+export const AudioAnalysisMessage: FC<AudioAnalysisMessageProps> = ({
   filename,
   waveform = [],
   bpm,

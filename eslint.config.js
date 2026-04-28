@@ -16,6 +16,8 @@ import headers from 'eslint-plugin-headers';
 import path from 'node:path';
 import url from 'node:url';
 
+
+
 // --- ESM way to get __dirname ---
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +52,14 @@ const commonRestrictedSyntaxRules = [
 
 export default tseslint.config(
   {
+    ignores: [
+      ".gemini-linters/**/*",
+      "scratch/**/*",
+      "packages/*/dist/**/*",
+      "bundle/**/*",
+    ],
+  },
+  {
     // Global ignores
     ignores: [
       '**/node_modules/**',
@@ -63,6 +73,8 @@ export default tseslint.config(
       'packages/test-utils/**',
       '.gemini/**',
       '**/*.d.ts',
+      '.gemini-linters/**',
+      'scratch/**',
       'scripts/**',
       'ducer-skills/**',
     ],
