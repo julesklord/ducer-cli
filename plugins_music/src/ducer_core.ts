@@ -69,7 +69,10 @@ export class DucerCore {
       toolDeclarations: unknown[],
       flag: boolean,
       label: string,
-    ) => AsyncIterable<{ type: string; value: string | { name: string; args: string } }>;
+    ) => AsyncIterable<{
+      type: string;
+      value: string | { name: string; args: string };
+    }>;
   } | null = null;
 
   private readonly actionsDbPath: string;
@@ -112,13 +115,15 @@ export class DucerCore {
     sessionId: string,
     toolDeclarations: unknown[],
     engineLabel: string,
-    enrichToolCall?: (call: {
+    enrichToolCall?: (call: { name: string; args: string }) => {
       name: string;
       args: string;
-    }) => { name: string; args: string },
+    },
   ): Promise<string> {
     if (!this.currentGeminiClient) {
-      throw new Error('Gemini client is not initialized for the active Ducer flow.');
+      throw new Error(
+        'Gemini client is not initialized for the active Ducer flow.',
+      );
     }
 
     let fullResponse = '';
@@ -547,7 +552,10 @@ Provide:
     filePath: string,
     options: StemSeparationOptions,
   ): Promise<StemSeparationResult> {
-    logger.info('stem_separation_started', { filePath, backend: options.backend });
+    logger.info('stem_separation_started', {
+      filePath,
+      backend: options.backend,
+    });
     const validation =
       this.mediaHandler.validateAudioFileForLocalProcessing(filePath);
     if (!validation.valid) {
@@ -558,7 +566,10 @@ Provide:
       `[Ducer] Starting stem separation (${options.backend}/${options.preset ?? 'standard'}): ${path.basename(filePath)}...`,
     );
     const result = await this.stemSeparationManager.separate(filePath, options);
-    logger.info('stem_separation_completed', { filePath, backend: options.backend });
+    logger.info('stem_separation_completed', {
+      filePath,
+      backend: options.backend,
+    });
     return result;
   }
 
@@ -579,8 +590,7 @@ Provide:
         const result = await this.separateStems(filePath, options);
         return { file: filePath, success: true, result };
       } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : String(error);
+        const message = error instanceof Error ? error.message : String(error);
         return { file: filePath, success: false, error: message };
       }
     });
@@ -591,6 +601,171 @@ Provide:
 
     console.log(`\n[Ducer] Stem Separation Summary: ${summary}`);
     return { results, summary };
+  }
+
+  /**
+   * Normalizes a single audio file.
+   */
+  async normalizeAudio(filePath: string, outputDir?: string): Promise<string> {
+    const fileName = path.basename(filePath);
+    const baseDir = outputDir || path.dirname(filePath);
+    const normalizedDir = outputDir
+      ? baseDir
+      : path.join(baseDir, 'normalized');
+
+    if (!fs.existsSync(normalizedDir)) {
+      fs.mkdirSync(normalizedDir, { recursive: true });
+    }
+
+    const outputPath = path.join(normalizedDir, fileName);
+    logger.info('normalization_started', { filePath, outputPath });
+
+    await this.mediaHandler.normalizeAudio(filePath, outputPath);
+
+    logger.info('normalization_completed', { filePath, outputPath });
+    return outputPath;
+  }
+
+  /**
+   * Converts a single audio file to another format.
+   */
+  async convertAudio(
+    filePath: string,
+    format: string,
+    outputDir?: string,
+  ): Promise<string> {
+    const fileName =
+      path.basename(filePath, path.extname(filePath)) + `.${format}`;
+    const baseDir = outputDir || path.dirname(filePath);
+    const convertedDir = outputDir ? baseDir : path.join(baseDir, 'converted');
+
+    if (!fs.existsSync(convertedDir)) {
+      fs.mkdirSync(convertedDir, { recursive: true });
+    }
+
+    const outputPath = path.join(convertedDir, fileName);
+    logger.info('conversion_started', { filePath, outputPath, format });
+
+    await this.mediaHandler.convertAudio(filePath, outputPath);
+
+    logger.info('conversion_completed', { filePath, outputPath, format });
+    return outputPath;
+  }
+
+  /**
+   * Converts multiple audio files in batch.
+   */
+  async convertMultipleAudio(
+    filePaths: string[],
+    format: string,
+    outputDir?: string,
+  ): Promise<{
+    results: Array<{
+      file: string;
+      outputPath?: string;
+      success: boolean;
+      error?: string;
+    }>;
+    summary: string;
+  }> {
+    console.log(
+      `\n[Ducer] Converting ${filePaths.length} files to ${format}...`,
+    );
+    const tasks = filePaths.map(async (filePath) => {
+      try {
+        const outputPath = await this.convertAudio(filePath, format, outputDir);
+        return { file: filePath, outputPath, success: true };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { file: filePath, success: false, error: message };
+      }
+    });
+
+    const results = await Promise.all(tasks);
+    const successCount = results.filter((r) => r.success).length;
+    const summary = `${successCount}/${filePaths.length} files converted successfully to ${format}.`;
+
+    console.log(`[Ducer] Conversion Summary: ${summary}`);
+    return { results, summary };
+  }
+
+  /**
+   * Converts all audio files in a directory.
+   */
+  async convertDirectory(
+    dirPath: string,
+    format: string,
+    outputDir?: string,
+  ): Promise<{
+    results: Array<{
+      file: string;
+      outputPath?: string;
+      success: boolean;
+      error?: string;
+    }>;
+    summary: string;
+  }> {
+    const filePaths = this.getAudioFilesFromDirectory(dirPath);
+    if (filePaths.length === 0) {
+      throw new Error(`No valid audio files found in directory: ${dirPath}`);
+    }
+    return this.convertMultipleAudio(filePaths, format, outputDir);
+  }
+
+  /**
+   * Normalizes multiple audio files in batch.
+   */
+  async normalizeMultipleAudio(
+    filePaths: string[],
+    outputDir?: string,
+  ): Promise<{
+    results: Array<{
+      file: string;
+      outputPath?: string;
+      success: boolean;
+      error?: string;
+    }>;
+    summary: string;
+  }> {
+    console.log(`\n[Ducer] Normalizing ${filePaths.length} files...`);
+    const tasks = filePaths.map(async (filePath) => {
+      try {
+        const outputPath = await this.normalizeAudio(filePath, outputDir);
+        return { file: filePath, outputPath, success: true };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { file: filePath, success: false, error: message };
+      }
+    });
+
+    const results = await Promise.all(tasks);
+    const successCount = results.filter((r) => r.success).length;
+    const summary = `${successCount}/${filePaths.length} files normalized successfully.`;
+
+    console.log(`[Ducer] Normalization Summary: ${summary}`);
+    return { results, summary };
+  }
+
+  /**
+   * Normalizes all audio files in a directory.
+   */
+  async normalizeDirectory(
+    dirPath: string,
+    outputDir?: string,
+  ): Promise<{
+    results: Array<{
+      file: string;
+      outputPath?: string;
+      success: boolean;
+      error?: string;
+    }>;
+    summary: string;
+  }> {
+    const filePaths = this.getAudioFilesFromDirectory(dirPath);
+    if (filePaths.length === 0) {
+      throw new Error(`No valid audio files found in directory: ${dirPath}`);
+    }
+    return this.normalizeMultipleAudio(filePaths, outputDir);
   }
 
   /**
@@ -624,12 +799,17 @@ Provide:
       throw new Error(`No valid audio files found in directory: ${dirPath}`);
     }
 
-    console.log(`[Ducer] Analyzing ${filePaths.length} stems in: ${path.basename(dirPath)}`);
+    console.log(
+      `[Ducer] Analyzing ${filePaths.length} stems in: ${path.basename(dirPath)}`,
+    );
     const batch = await this.analyzeMultiple(filePaths, mode, config);
 
     let comparativeReport: string | undefined;
     if (mode === 'advanced' && batch.results.some((r) => r.success)) {
-      comparativeReport = await this.generateComparativeReport(batch.results, config);
+      comparativeReport = await this.generateComparativeReport(
+        batch.results,
+        config,
+      );
     }
 
     return { ...batch, comparativeReport };
@@ -644,7 +824,9 @@ Provide:
   ): Promise<string> {
     const geminiClient = config.getGeminiClient();
     const sessionId = config.getSessionId();
-    this.currentGeminiClient = geminiClient as any;
+    this.currentGeminiClient = geminiClient as NonNullable<
+      DucerCore['currentGeminiClient']
+    >;
 
     const context = results
       .filter((r) => r.success)

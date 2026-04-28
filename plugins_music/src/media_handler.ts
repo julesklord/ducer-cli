@@ -6,6 +6,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 /**
  * Handles validation and preparation of media files (Audio/MIDI).
@@ -13,9 +17,27 @@ import path from 'node:path';
  */
 export class MusicMediaHandler {
   private readonly MAX_FILE_SIZE_MB = 10; // Default limit for the PoC
-  private readonly ALLOWED_EXTENSIONS = new Set(['.wav', '.mp3', '.mid', '.midi', '.flac', '.ogg', '.m4a', '.aac']);
+  private readonly ALLOWED_EXTENSIONS = new Set([
+    '.wav',
+    '.mp3',
+    '.mid',
+    '.midi',
+    '.flac',
+    '.ogg',
+    '.m4a',
+    '.aac',
+  ]);
   private readonly LOCAL_PROCESSING_MAX_FILE_SIZE_MB = 512;
-  private readonly AUDIO_EXTENSIONS = new Set(['.wav', '.mp3', '.flac', '.ogg', '.m4a', '.aac', '.aiff', '.aif']);
+  private readonly AUDIO_EXTENSIONS = new Set([
+    '.wav',
+    '.mp3',
+    '.flac',
+    '.ogg',
+    '.m4a',
+    '.aac',
+    '.aiff',
+    '.aif',
+  ]);
 
   /**
    * Validates if a file is suitable for Gemini API submission.
@@ -75,5 +97,42 @@ export class MusicMediaHandler {
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Normalizes audio gain using ffmpeg's loudnorm filter.
+   */
+  async normalizeAudio(inputPath: string, outputPath: string): Promise<void> {
+    const args = [
+      '-i',
+      inputPath,
+      '-af',
+      'loudnorm=I=-16:TP=-1.5:LRA=11',
+      '-y',
+      outputPath,
+    ];
+
+    try {
+      await execFileAsync('ffmpeg', args);
+    } catch (error) {
+      throw new Error(
+        `FFmpeg normalization failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Converts audio to a different format using ffmpeg.
+   */
+  async convertAudio(inputPath: string, outputPath: string): Promise<void> {
+    const args = ['-i', inputPath, '-y', outputPath];
+
+    try {
+      await execFileAsync('ffmpeg', args);
+    } catch (error) {
+      throw new Error(
+        `FFmpeg conversion failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

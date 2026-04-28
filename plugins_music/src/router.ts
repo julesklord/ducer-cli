@@ -129,10 +129,13 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
     }
 
     const mode = isAdvanced ? 'advanced' : isLite ? 'lite' : 'standard';
-    const queueEnabled = config.ducerSettings?.background_jobs?.enabled ?? false;
+    const queueEnabled =
+      config.ducerSettings?.background_jobs?.enabled ?? false;
 
     if (queueEnabled) {
-      const queue = new JobQueue(config.ducerSettings?.background_jobs?.queue_file);
+      const queue = new JobQueue(
+        config.ducerSettings?.background_jobs?.queue_file,
+      );
       const job = queue.addJob('analysis', {
         filePaths,
         dirPath,
@@ -140,7 +143,9 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         isAdvanced,
       });
       console.log(`\n[Ducer] Analysis task queued. Job ID: ${job.id}`);
-      console.log('[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.');
+      console.log(
+        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
+      );
       return;
     }
 
@@ -148,7 +153,10 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
       if (dirPath) {
         const result = await ducer.analyzeStemsDirectory(dirPath, mode, config);
         if (isAdvanced && result.comparativeReport) {
-           await handleAdvancedArtifacts(result.comparativeReport, path.join(dirPath, "Comparative_Report"));
+          await handleAdvancedArtifacts(
+            result.comparativeReport,
+            path.join(dirPath, 'Comparative_Report'),
+          );
         }
       } else if (filePaths.length > 1) {
         const batchResults = await ducer.analyzeMultiple(
@@ -158,7 +166,8 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         );
         if (isAdvanced) {
           for (const res of batchResults.results) {
-            if (res.success) await handleAdvancedArtifacts(res.response, res.file);
+            if (res.success)
+              await handleAdvancedArtifacts(res.response, res.file);
           }
         }
       } else {
@@ -175,6 +184,94 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[Ducer] Error during analysis: ${message}`);
+    }
+  } else if (subcommand === 'batch-normalize') {
+    const dirPath = argv.dir as string | undefined;
+    if (filePaths.length === 0 && !dirPath) {
+      console.error(
+        'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
+      );
+      return;
+    }
+
+    const outputDir = argv.output as string | undefined;
+    const queueEnabled =
+      config.ducerSettings?.background_jobs?.enabled ?? false;
+
+    if (queueEnabled) {
+      const queue = new JobQueue(
+        config.ducerSettings?.background_jobs?.queue_file,
+      );
+      const job = queue.addJob('normalization', {
+        filePaths,
+        dirPath,
+        outputDir,
+      });
+      console.log(`\n[Ducer] Normalization task queued. Job ID: ${job.id}`);
+      console.log(
+        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
+      );
+      return;
+    }
+
+    try {
+      if (dirPath) {
+        const result = await ducer.normalizeDirectory(dirPath, outputDir);
+        console.log(`[Ducer] ${result.summary}`);
+      } else {
+        const result = await ducer.normalizeMultipleAudio(filePaths, outputDir);
+        console.log(`[Ducer] ${result.summary}`);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[Ducer] Error during normalization: ${message}`);
+    }
+  } else if (subcommand === 'batch-convert') {
+    const dirPath = argv.dir as string | undefined;
+    if (filePaths.length === 0 && !dirPath) {
+      console.error(
+        'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
+      );
+      return;
+    }
+
+    const format = (argv['format'] as string) || 'mp3';
+    const outputDir = argv.output as string | undefined;
+    const queueEnabled =
+      config.ducerSettings?.background_jobs?.enabled ?? false;
+
+    if (queueEnabled) {
+      const queue = new JobQueue(
+        config.ducerSettings?.background_jobs?.queue_file,
+      );
+      const job = queue.addJob('conversion', {
+        filePaths,
+        dirPath,
+        format,
+        outputDir,
+      });
+      console.log(`\n[Ducer] Conversion task queued. Job ID: ${job.id}`);
+      console.log(
+        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
+      );
+      return;
+    }
+
+    try {
+      if (dirPath) {
+        const result = await ducer.convertDirectory(dirPath, format, outputDir);
+        console.log(`[Ducer] ${result.summary}`);
+      } else {
+        const result = await ducer.convertMultipleAudio(
+          filePaths,
+          format,
+          outputDir,
+        );
+        console.log(`[Ducer] ${result.summary}`);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[Ducer] Error during conversion: ${message}`);
     }
   } else if (subcommand === 'separate') {
     if (filePaths.length === 0) {
@@ -193,16 +290,21 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
     }
 
     const separationOptions = buildStemSeparationOptions(argv, config);
-    const queueEnabled = config.ducerSettings?.background_jobs?.enabled ?? false;
+    const queueEnabled =
+      config.ducerSettings?.background_jobs?.enabled ?? false;
 
     if (queueEnabled) {
-      const queue = new JobQueue(config.ducerSettings?.background_jobs?.queue_file);
+      const queue = new JobQueue(
+        config.ducerSettings?.background_jobs?.queue_file,
+      );
       const job = queue.addJob('stem-separation', {
         filePaths,
         separationOptions,
       });
       console.log(`\n[Ducer] Separation task queued. Job ID: ${job.id}`);
-      console.log('[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.');
+      console.log(
+        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
+      );
       return;
     }
 
@@ -216,7 +318,9 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
           if (item.success && item.result) {
             printStemSeparationResult(item.file, item.result);
           } else {
-            console.error(`[Ducer] Error separating ${item.file}: ${item.error}`);
+            console.error(
+              `[Ducer] Error separating ${item.file}: ${item.error}`,
+            );
           }
         }
       } else {
@@ -231,7 +335,9 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
       console.error(`[Ducer] Error during stem separation: ${message}`);
     }
   } else if (subcommand === 'jobs') {
-    const queue = new JobQueue(config.ducerSettings?.background_jobs?.queue_file);
+    const queue = new JobQueue(
+      config.ducerSettings?.background_jobs?.queue_file,
+    );
     if (argv.status) {
       const jobs = queue.listJobs();
       console.log('\n[Ducer Jobs] Current queue:');
@@ -331,7 +437,9 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
 
   const maxParallel = config.ducerSettings?.background_jobs?.max_parallel ?? 2;
   const maxAttempts = 3;
-  console.log(`[Ducer Daemon] Job queue processor active. Max parallel: ${maxParallel}`);
+  console.log(
+    `[Ducer Daemon] Job queue processor active. Max parallel: ${maxParallel}`,
+  );
 
   while (true) {
     const running = queue.getRunningJobs();
@@ -339,9 +447,17 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
       const job = queue.claimNextPendingJob();
       if (job) {
         if (job.attempts > maxAttempts) {
-          console.error(`[Ducer Daemon] Skipping job ${job.id} after ${job.attempts} failed attempts.`);
-          logger.error('job_max_attempts_reached', { jobId: job.id, attempts: job.attempts });
-          queue.updateJob(job.id, { status: 'failed', error: 'Exceeded maximum attempts.' });
+          console.error(
+            `[Ducer Daemon] Skipping job ${job.id} after ${job.attempts} failed attempts.`,
+          );
+          logger.error('job_max_attempts_reached', {
+            jobId: job.id,
+            attempts: job.attempts,
+          });
+          queue.updateJob(job.id, {
+            status: 'failed',
+            error: 'Exceeded maximum attempts.',
+          });
           continue;
         }
         console.log(`[Ducer Daemon] Starting job: ${job.id} (${job.type})`);
@@ -351,28 +467,58 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
         (async () => {
           try {
             if (job.type === 'analysis') {
-              const { filePaths, dirPath, mode, isAdvanced } = job.payload as any;
+              const { filePaths, dirPath, mode, isAdvanced } = job.payload as {
+                filePaths: string[];
+                dirPath?: string;
+                mode: 'lite' | 'advanced';
+                isAdvanced: boolean;
+              };
               if (dirPath) {
-                const result = await ducer.analyzeStemsDirectory(dirPath, mode, config);
+                const result = await ducer.analyzeStemsDirectory(
+                  dirPath,
+                  mode,
+                  config,
+                );
                 if (isAdvanced && result.comparativeReport) {
-                   await handleAdvancedArtifacts(result.comparativeReport, path.join(dirPath, "Comparative_Report"));
+                  await handleAdvancedArtifacts(
+                    result.comparativeReport,
+                    path.join(dirPath, 'Comparative_Report'),
+                  );
                 }
-                queue.updateJob(job.id, { status: 'completed', result: result.summary });
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: result.summary,
+                });
               } else if (filePaths.length > 1) {
-                const batchResults = await ducer.analyzeMultiple(filePaths, mode, config);
+                const batchResults = await ducer.analyzeMultiple(
+                  filePaths,
+                  mode,
+                  config,
+                );
                 if (isAdvanced) {
                   for (const res of batchResults.results) {
-                    if (res.success) await handleAdvancedArtifacts(res.response, res.file);
+                    if (res.success)
+                      await handleAdvancedArtifacts(res.response, res.file);
                   }
                 }
-                queue.updateJob(job.id, { status: 'completed', result: batchResults.summary });
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: batchResults.summary,
+                });
               } else {
                 const filePath = filePaths[0];
-                const response = await ducer.analyzeFile(filePath, mode, config);
+                const response = await ducer.analyzeFile(
+                  filePath,
+                  mode,
+                  config,
+                );
                 if (isAdvanced) {
                   await handleAdvancedArtifacts(response, filePath);
                 }
-                queue.updateJob(job.id, { status: 'completed', result: 'Analysis completed successfully.' });
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: 'Analysis completed successfully.',
+                });
               }
             } else if (job.type === 'stem-separation') {
               const { filePaths, separationOptions } = job.payload as {
@@ -399,15 +545,77 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
                   result: result.outputDir,
                 });
               }
+            } else if (job.type === 'normalization') {
+              const { filePaths, dirPath, outputDir } = job.payload as {
+                filePaths: string[];
+                dirPath?: string;
+                outputDir?: string;
+              };
+
+              if (dirPath) {
+                const result = await ducer.normalizeDirectory(
+                  dirPath,
+                  outputDir,
+                );
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: result.summary,
+                });
+              } else {
+                const result = await ducer.normalizeMultipleAudio(
+                  filePaths,
+                  outputDir,
+                );
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: result.summary,
+                });
+              }
+            } else if (job.type === 'conversion') {
+              const { filePaths, dirPath, format, outputDir } = job.payload as {
+                filePaths: string[];
+                dirPath?: string;
+                format: string;
+                outputDir?: string;
+              };
+
+              if (dirPath) {
+                const result = await ducer.convertDirectory(
+                  dirPath,
+                  format,
+                  outputDir,
+                );
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: result.summary,
+                });
+              } else {
+                const result = await ducer.convertMultipleAudio(
+                  filePaths,
+                  format,
+                  outputDir,
+                );
+                queue.updateJob(job.id, {
+                  status: 'completed',
+                  result: result.summary,
+                });
+              }
             } else {
-              queue.updateJob(job.id, { status: 'failed', error: 'Unknown job type.' });
+              queue.updateJob(job.id, {
+                status: 'failed',
+                error: 'Unknown job type.',
+              });
             }
             console.log(`[Ducer Daemon] Job completed: ${job.id}`);
             logger.info('job_completed', { type: job.type }, { jobId: job.id });
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error(`[Ducer Daemon] Job failed: ${job.id} - ${msg}`);
-            logger.error('job_failed', { type: job.type, error: msg }, { jobId: job.id });
+            logger.error(
+              'job_failed',
+              { type: job.type, error: msg },
+              { jobId: job.id },
+            );
             queue.updateJob(job.id, { status: 'failed', error: msg });
           }
         })();
@@ -426,7 +634,9 @@ function printStemSeparationResult(
     stemFiles: string[];
   },
 ) {
-  console.log(`\n[Ducer] Separation completed for ${path.basename(originalFile)}:`);
+  console.log(
+    `\n[Ducer] Separation completed for ${path.basename(originalFile)}:`,
+  );
   console.log(`  -> Backend: ${result.backend}`);
   console.log(`  -> Preset: ${result.preset}`);
   console.log(`  -> Output: ${result.outputDir}`);
@@ -490,8 +700,18 @@ export const ducerCommand = {
     return yargs
       .positional('subcommand', {
         type: 'string',
-        describe: 'Ducer subcommand (analyze, separate, do, service, jobs, daemon)',
-        choices: ['analyze', 'separate', 'do', 'service', 'jobs', 'daemon'],
+        describe:
+          'Ducer subcommand (analyze, separate, batch-normalize, batch-convert, do, service, jobs, daemon)',
+        choices: [
+          'analyze',
+          'separate',
+          'batch-normalize',
+          'batch-convert',
+          'do',
+          'service',
+          'jobs',
+          'daemon',
+        ],
       })
       .positional('queryPositional', {
         type: 'string',
@@ -502,7 +722,11 @@ export const ducerCommand = {
         type: 'array',
         describe: 'Path to audio/MIDI file(s) to process',
       })
-      .option('dir', { alias: 'd', type: 'string', describe: 'Directory of stems to analyze' })
+      .option('dir', {
+        alias: 'd',
+        type: 'string',
+        describe: 'Directory of stems to analyze',
+      })
       .option('advanced', {
         alias: 'a',
         type: 'boolean',
@@ -533,6 +757,11 @@ export const ducerCommand = {
       .option('output', {
         type: 'string',
         describe: 'Output directory for stems',
+      })
+      .option('format', {
+        type: 'string',
+        describe: 'Target format for conversion (mp3, wav, flac, etc.)',
+        default: 'mp3',
       })
       .option('model', {
         type: 'string',

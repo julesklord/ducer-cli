@@ -73,6 +73,14 @@ Completed:
 3. Tracked events: analysis starts/completes, separation starts/completes, job
    lifecycle, and REAPER commands.
 
+## 1.11 Batch Audio Utility Tools (P4)
+
+Completed:
+
+1. `batch-normalize`: Standardize gain across a directory using ffmpeg loudnorm.
+2. `batch-convert`: Convert multiple files between formats (WAV, MP3, FLAC, etc.) using ffmpeg.
+3. Fully integrated into `DucerCore`, `Router`, and `JobQueue` (Daemon compatible).
+
 ---
 
 ## 2. Current Reality of the Codebase
@@ -83,25 +91,15 @@ Completed:
   Ducer identity by default.
 - **Reliability**: IPC and Queueing race conditions have been surgically
   eliminated.
+- **Batch Utilities**: Robust local processing for normalization and conversion
+  is now available.
 
 ---
 
 ## 3. Highest-Priority Remaining Work
 
-### P4. Batch Audio Utility Tools
-
-**Status**: not implemented  
-**Priority**: medium
-
-Why:
-
-- Practical production value for cleaning up large stem folders.
-- No AI logic needed; just robust subprocess execution.
-
-Target tools:
-
-1. `batch_convert`: (e.g., WAV -> FLAC/MP3)
-2. `normalize_stems`: Standardize gain across a directory.
+**Status**: Stabilization and Batch Utility expansion completed.
+**Next phase**: Web/Terminal dashboards and further DAW integrations (optional/lower priority).
 
 ---
 

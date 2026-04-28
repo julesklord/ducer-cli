@@ -17,6 +17,9 @@ vi.mock('node:fs', () => ({
     existsSync: vi.fn().mockReturnValue(true),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
+    appendFileSync: vi.fn(),
+    statSync: vi.fn().mockReturnValue({ isDirectory: () => true, size: 1024 }),
+    readdirSync: vi.fn().mockReturnValue([]),
     readFileSync: vi.fn((p: string) => {
       if (p.includes('semantic_registry.json')) {
         return JSON.stringify({
@@ -29,6 +32,12 @@ vi.mock('node:fs', () => ({
       return '';
     }),
   },
+}));
+
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn((file, args, callback) => {
+    callback(null, { stdout: '', stderr: '' });
+  }),
 }));
 
 // Mock the dependencies
@@ -119,5 +128,12 @@ describe('DucerCore', () => {
     expect(names).not.toContain('analyze_frequencies');
     expect(names).not.toContain('suggest_chords');
     expect(names).not.toContain('install_producer_toolset');
+  });
+
+  it('should normalize audio files', async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    const outputPath = await ducer.normalizeAudio('input.wav');
+    expect(outputPath).toContain('normalized');
+    expect(fs.mkdirSync).toHaveBeenCalled();
   });
 });

@@ -78,5 +78,8 @@ plugins_music/src/**/*.js
 plugins_music/src/**/*.js.map
 plugins_music/src/**/*.d.ts
 !plugins_music/src/**/*.ts
-
+thenextlevel.md
+qp_audit.md
+README_GEMINI.md
 .gemini/
+.vs/
