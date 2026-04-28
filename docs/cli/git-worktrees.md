@@ -18,7 +18,7 @@ Learn more about [session management](./session-management.md).
 > - Use the **/bug** command within Gemini CLI to file an issue.
 
 Learn more in the official Git worktree
-[documentation](https://git-scm.com/docs/git-worktree).
+[documentation](https://git-scm.com./git-worktree).
 
 ## How to enable Git worktrees
 

@@ -75,7 +75,7 @@
               },
               {
                 "label": "User guide: Install and manage",
-                "link": "/docs/extensions/#manage-extensions"
+                "link": "./extensions/#manage-extensions"
               },
               {
                 "label": "Developer guide: Build extensions",

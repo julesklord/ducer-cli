@@ -390,22 +390,22 @@ then be used to authenticate with the MCP server.
 
 #### Setup instructions
 
-1. **[Create](https://cloud.google.com/iap/docs/oauth-client-creation) or use an
+1. **[Create](https://cloud.google.com/iap./oauth-client-creation) or use an
    existing OAuth 2.0 client ID.** To use an existing OAuth 2.0 client ID,
    follow the steps in
-   [How to share OAuth Clients](https://cloud.google.com/iap/docs/sharing-oauth-clients).
+   [How to share OAuth Clients](https://cloud.google.com/iap./sharing-oauth-clients).
 2. **Add the OAuth ID to the allowlist for
-   [programmatic access](https://cloud.google.com/iap/docs/sharing-oauth-clients#programmatic_access)
+   [programmatic access](https://cloud.google.com/iap./sharing-oauth-clients#programmatic_access)
    for the application.** Since Cloud Run is not yet a supported resource type
    in gcloud iap, you must allowlist the Client ID on the project.
 3. **Create a service account.**
-   [Documentation](https://cloud.google.com/iam/docs/service-accounts-create#creating),
+   [Documentation](https://cloud.google.com/iam./service-accounts-create#creating),
    [Cloud Console Link](https://console.cloud.google.com/iam-admin/serviceaccounts)
 4. **Add both the service account and users to the IAP Policy** in the
    "Security" tab of the Cloud Run service itself or via gcloud.
 5. **Grant all users and groups** who will access the MCP Server the necessary
    permissions to
-   [impersonate the service account](https://cloud.google.com/docs/authentication/use-service-account-impersonation)
+   [impersonate the service account](https://cloud.google.com./authentication/use-service-account-impersonation)
    (for example, `roles/iam.serviceAccountTokenCreator`).
 6. **[Enable](https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com)
    the IAM Credentials API** for your project.
