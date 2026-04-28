@@ -400,6 +400,12 @@
         <span id="active-tasks">0 tareas</span>
       </div>
       <div class="status-badge">
+        <span id="model-name" style="color: var(--amber);">gemini-1.5-pro</span>
+      </div>
+      <div class="status-badge">
+        <span id="tokens-count" style="color: var(--green);">0 TKNS</span>
+      </div>
+      <div class="status-badge">
         <span id="memory-usage">0 MB</span>
       </div>
     </div>
@@ -479,6 +485,12 @@
               Tasa de éxito
             </div>
             <div id="success-rate" style="font-size: 1.4rem; color: var(--green); font-weight: 500;">—</div>
+          </div>
+          <div>
+            <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
+              Consumo Total
+            </div>
+            <div id="total-tokens-stat" style="font-size: 1.4rem; color: var(--green); font-weight: 500;">—</div>
           </div>
           <div>
             <div style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem;">
@@ -570,6 +582,9 @@
         document.getElementById('failed').textContent = data.total_tasks_failed;
         document.getElementById('active-tasks').textContent = `${data.active_tasks.length} tareas`;
         document.getElementById('memory-usage').textContent = `${data.memory_usage_mb} MB`;
+        document.getElementById('model-name').textContent = data.last_model_used;
+        document.getElementById('tokens-count').textContent = `${data.total_tokens_consumed.toLocaleString()} TKNS`;
+        document.getElementById('total-tokens-stat').textContent = data.total_tokens_consumed.toLocaleString();
 
         // Update success rate
         const total = data.total_tasks_completed + data.total_tasks_failed;
@@ -610,9 +625,13 @@
             <div class="task-info">
               <span class="task-type">${task.type.toUpperCase()}</span>
               <span class="task-time">${new Date(task.timestamp).toLocaleTimeString()}</span>
+              <span style="font-size: 0.6rem; color: var(--muted);">[${task.metrics?.model || '—'}]</span>
             </div>
-            <span class="task-status ${statusColor}">${task.status}</span>
-            <span class="task-duration">${(task.duration_ms / 1000).toFixed(1)}s</span>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <span style="font-size: 0.65rem; color: var(--green);">${task.metrics?.total_tokens || 0} T</span>
+              <span class="task-status ${statusColor}">${task.status}</span>
+              <span class="task-duration">${(task.duration_ms / 1000).toFixed(1)}s</span>
+            </div>
           `;
 
           historyEl.appendChild(item);

@@ -77,6 +77,23 @@ async function executeDucerTask(taskId, query) {
       const task = sessions.get(taskId);
       const duration = Date.now() - task.startTime;
 
+      // Extract metrics from stdout using regex
+      const modelMatch = stdout.match(/model: ['"]?([^'",\s]+)['"]?/i);
+      const promptTokensMatch = stdout.match(/promptTokenCount: (\d+)/i);
+      const candidatesTokensMatch = stdout.match(
+        /candidatesTokenCount: (\d+)/i,
+      );
+      const totalTokensMatch = stdout.match(/totalTokenCount: (\d+)/i);
+
+      const metrics = {
+        model: modelMatch ? modelMatch[1] : 'gemini-1.5-pro',
+        prompt_tokens: promptTokensMatch ? parseInt(promptTokensMatch[1]) : 0,
+        candidates_tokens: candidatesTokensMatch
+          ? parseInt(candidatesTokensMatch[1])
+          : 0,
+        total_tokens: totalTokensMatch ? parseInt(totalTokensMatch[1]) : 0,
+      };
+
       const result = {
         id: taskId,
         type: task.type,
@@ -86,6 +103,7 @@ async function executeDucerTask(taskId, query) {
         stdout,
         stderr,
         exit_code: code,
+        metrics,
         timestamp: new Date().toISOString(),
       };
 
@@ -227,6 +245,10 @@ app.get('/api/tasks/:id', (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
+  const totalTokens = taskHistory.reduce(
+    (sum, t) => sum + (t.metrics?.total_tokens || 0),
+    0,
+  );
   res.json({
     server_version: '0.1.0',
     uptime_seconds: Math.floor(process.uptime()),
@@ -238,7 +260,9 @@ app.get('/api/status', (req, res) => {
     total_tasks_failed: taskHistory.filter(
       (t) => t.status === 'error' || t.status === 'failed',
     ).length,
+    total_tokens_consumed: totalTokens,
     memory_usage_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    last_model_used: taskHistory[0]?.metrics?.model || 'gemini-1.5-pro',
   });
 });
 
