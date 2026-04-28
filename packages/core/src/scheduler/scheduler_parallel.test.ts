@@ -175,6 +175,10 @@ describe('Scheduler Parallel Execution', () => {
 
   const mockInvocation = {
     shouldConfirmExecute: vi.fn().mockResolvedValue(false),
+    toolLocations: vi.fn().mockReturnValue([]),
+    toolLocations: vi.fn().mockReturnValue([]),
+    toolLocations: vi.fn().mockReturnValue([]),
+    toolLocations: vi.fn().mockReturnValue([]),
   };
 
   beforeEach(() => {

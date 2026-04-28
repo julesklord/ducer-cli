@@ -455,7 +455,7 @@ export class Scheduler {
           if (peeked && this._isParallelizable(peeked.request)) {
             // Check for resource conflicts with already batched tools
             const hasConflict = batch.some((batchedCall) =>
-              this._hasResourceConflict(batchedCall as any, peeked as any),
+              this._hasResourceConflict(batchedCall, peeked),
             );
 
             if (!hasConflict) {
@@ -568,9 +568,9 @@ export class Scheduler {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invocationA = (callA as any).invocation;
+    const invocationA = callA.invocation;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invocationB = (callB as any).invocation;
+    const invocationB = callB.invocation;
 
     if (!invocationA || !invocationB) {
       return false;

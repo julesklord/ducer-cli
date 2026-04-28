@@ -191,7 +191,7 @@ export async function start_sandbox(
             `Invalid GEMINI_SANDBOX_PROXY_COMMAND: '${proxyCommand}'`,
           );
         }
-        proxyProcess = spawn(proxyParts[0] as string, proxyParts.slice(1), {
+        proxyProcess = spawn(proxyParts[0], proxyParts.slice(1), {
           stdio: ['ignore', 'pipe', 'pipe'],
           shell: false,
           detached: true,

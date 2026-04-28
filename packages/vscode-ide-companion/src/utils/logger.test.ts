@@ -8,8 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as vscode from 'vscode';
 import { createLogger } from './logger.js';
 
-vi.mock('vscode', () => {
-  return {
+vi.mock('vscode', () => (
+  {
     ExtensionMode: {
       Development: 1,
       Production: 2,
@@ -42,7 +42,7 @@ describe('createLogger', () => {
       get: mockGetConfigValue,
     }));
 
-    vi.mocked(vscode.workspace.getConfiguration).mockImplementation(mockGetConfiguration as any);
+    vi.mocked(vscode.workspace.getConfiguration).mockImplementation(mockGetConfiguration as unknown);
   });
 
   afterEach(() => {

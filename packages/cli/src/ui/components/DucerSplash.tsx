@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { ducerBrandingLogo, spectrumSplash } from './DucerAscii.js';
 import { ThemedGradient } from './ThemedGradient.js';
@@ -13,7 +13,7 @@ interface DucerSplashProps {
   version: string;
 }
 
-export const DucerSplash: React.FC<DucerSplashProps> = ({ version }) => {
+export const DucerSplash: FC<DucerSplashProps> = ({ version }) => {
   const [loadingText, setLoadingText] = useState('Initializing Audio Engine...');
   const [dots, setDots] = useState('');
 
