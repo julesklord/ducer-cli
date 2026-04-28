@@ -31,7 +31,7 @@ import type { FallbackModelHandler } from './types.js';
 import { openBrowserSecurely } from '../utils/secure-browser-launcher.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import * as policyHelpers from '../availability/policyHelpers.js';
-import { logFlashFallback, FlashFallbackEvent } from "../telemetry/index.js";
+import { logFlashFallback, FlashFallbackEvent } from '../telemetry/index.js';
 import { createDefaultPolicy } from '../availability/policyCatalog.js';
 import {
   RetryableQuotaError,
@@ -62,7 +62,7 @@ const FALLBACK_MODEL = DEFAULT_GEMINI_FLASH_MODEL;
 const AUTH_OAUTH = AuthType.LOGIN_WITH_GOOGLE;
 
 const createMockConfig = (overrides: Partial<Config> = {}): Config => {
-  const config = ({
+  const config = {
     fallbackHandler: undefined,
     getFallbackModelHandler: vi.fn(),
     setActiveModel: vi.fn(),
@@ -80,7 +80,7 @@ const createMockConfig = (overrides: Partial<Config> = {}): Config => {
     isInteractive: vi.fn(() => false),
     getContentGeneratorConfig: vi.fn(() => ({ authType: AUTH_OAUTH })),
     ...overrides,
-  }) as unknown as Config;
+  } as unknown as Config;
 
   vi.mocked(config.activateFallbackMode).mockImplementation(() => {
     logFlashFallback(config, new FlashFallbackEvent(AUTH_OAUTH));
