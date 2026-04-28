@@ -5,6 +5,7 @@
  */
 
 import express from 'express';
+import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { spawn } from 'child_process';
 import { v4 as uuid } from 'uuid';
@@ -13,6 +14,7 @@ import { fileURLToPath } from 'url';
 import cors from 'cors';
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -25,8 +27,8 @@ const sessions = new Map();
 const taskHistory = [];
 const MAX_HISTORY = 100;
 
-// Socket.io setup
-const io = new SocketIOServer(app, {
+// Socket.io setup - attach to httpServer instead of app
+const io = new SocketIOServer(httpServer, {
   cors: { origin: '*' },
   transports: ['websocket', 'polling'],
 });
@@ -265,7 +267,7 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════╗`);
   console.log(`║  DUCER WEB CONTROLLER RUNNING      ║`);
   console.log(`║  http://localhost:${PORT}              ║`);
@@ -275,7 +277,7 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\nShutting down gracefully...');
-  server.close(() => {
+  httpServer.close(() => {
     process.exit(0);
   });
 });
