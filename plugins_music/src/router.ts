@@ -98,33 +98,32 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
   const subcommand = argv.subcommand;
   const filePaths = Array.isArray(argv.file)
     ? (argv.file as string[])
-    : argv.file
-      ? [argv.file as string]
+    : typeof argv.file === 'string'
+      ? [argv.file]
       : [];
   const isAdvanced = argv.advanced || false;
   const isLite = argv.lite || false;
 
-  console.log('\n[DUCER] Producer Intelligence active.');
+  logger.info('ducer_active', { message: 'Producer Intelligence active.' });
 
   if (subcommand === 'analyze') {
-    const dirPath = argv.dir as string | undefined;
+    const dirPath = typeof argv.dir === 'string' ? argv.dir : undefined;
     if (filePaths.length === 0 && !dirPath) {
-      console.error(
-        'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
-      );
+      logger.error('analysis_missing_path', {
+        message:
+          'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
+      });
       return;
     }
 
     if (dirPath && !fs.existsSync(dirPath)) {
-      console.error(`Error: Directory does not exist: ${dirPath}`);
+      logger.error('directory_not_found', { path: dirPath });
       return;
     }
 
     const missingFiles = filePaths.filter((p) => !fs.existsSync(p));
     if (missingFiles.length > 0) {
-      console.error(
-        `Error: The following files do not exist: ${missingFiles.join(', ')}`,
-      );
+      logger.error('files_not_found', { files: missingFiles });
       return;
     }
 
@@ -142,10 +141,7 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         mode,
         isAdvanced,
       });
-      console.log(`\n[Ducer] Analysis task queued. Job ID: ${job.id}`);
-      console.log(
-        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
-      );
+      logger.info('analysis_queued', { jobId: job.id, filePaths, dirPath });
       return;
     }
 
@@ -172,9 +168,10 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         }
       } else {
         const filePath = filePaths[0];
-        console.log(
-          `[Ducer] Starting expert audit (${mode}): ${path.basename(filePath)}...`,
-        );
+        logger.info('analysis_starting', {
+          file: path.basename(filePath),
+          mode,
+        });
         const fullResponse = await ducer.analyzeFile(filePath, mode, config);
 
         if (isAdvanced) {
@@ -183,18 +180,19 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[Ducer] Error during analysis: ${message}`);
+      logger.error('analysis_error', { error: message });
     }
   } else if (subcommand === 'batch-normalize') {
-    const dirPath = argv.dir as string | undefined;
+    const dirPath = typeof argv.dir === 'string' ? argv.dir : undefined;
     if (filePaths.length === 0 && !dirPath) {
-      console.error(
-        'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
-      );
+      logger.error('normalization_missing_path', {
+        message:
+          'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
+      });
       return;
     }
 
-    const outputDir = argv.output as string | undefined;
+    const outputDir = typeof argv.output === 'string' ? argv.output : undefined;
     const queueEnabled =
       config.ducerSettings?.background_jobs?.enabled ?? false;
 
@@ -207,36 +205,38 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         dirPath,
         outputDir,
       });
-      console.log(`\n[Ducer] Normalization task queued. Job ID: ${job.id}`);
-      console.log(
-        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
-      );
+      logger.info('normalization_queued', {
+        jobId: job.id,
+        filePaths,
+        dirPath,
+      });
       return;
     }
 
     try {
       if (dirPath) {
         const result = await ducer.normalizeDirectory(dirPath, outputDir);
-        console.log(`[Ducer] ${result.summary}`);
+        logger.info('normalization_complete', { summary: result.summary });
       } else {
         const result = await ducer.normalizeMultipleAudio(filePaths, outputDir);
-        console.log(`[Ducer] ${result.summary}`);
+        logger.info('normalization_complete', { summary: result.summary });
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[Ducer] Error during normalization: ${message}`);
+      logger.error('normalization_error', { error: message });
     }
   } else if (subcommand === 'batch-convert') {
-    const dirPath = argv.dir as string | undefined;
+    const dirPath = typeof argv.dir === 'string' ? argv.dir : undefined;
     if (filePaths.length === 0 && !dirPath) {
-      console.error(
-        'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
-      );
+      logger.error('conversion_missing_path', {
+        message:
+          'Error: You must provide at least one file path with --file [path] or a directory with --dir [path]',
+      });
       return;
     }
 
     const format = (argv['format'] as string) || 'mp3';
-    const outputDir = argv.output as string | undefined;
+    const outputDir = typeof argv.output === 'string' ? argv.output : undefined;
     const queueEnabled =
       config.ducerSettings?.background_jobs?.enabled ?? false;
 
@@ -250,42 +250,37 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         format,
         outputDir,
       });
-      console.log(`\n[Ducer] Conversion task queued. Job ID: ${job.id}`);
-      console.log(
-        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
-      );
+      logger.info('conversion_queued', { jobId: job.id, filePaths, dirPath });
       return;
     }
 
     try {
       if (dirPath) {
         const result = await ducer.convertDirectory(dirPath, format, outputDir);
-        console.log(`[Ducer] ${result.summary}`);
+        logger.info('conversion_complete', { summary: result.summary });
       } else {
         const result = await ducer.convertMultipleAudio(
           filePaths,
           format,
           outputDir,
         );
-        console.log(`[Ducer] ${result.summary}`);
+        logger.info('conversion_complete', { summary: result.summary });
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[Ducer] Error during conversion: ${message}`);
+      logger.error('conversion_error', { error: message });
     }
   } else if (subcommand === 'separate') {
     if (filePaths.length === 0) {
-      console.error(
-        'Error: You must provide at least one file path with --file [path]',
-      );
+      logger.error('separation_missing_path', {
+        message: 'Error: You must provide at least one file path with --file [path]',
+      });
       return;
     }
 
     const missingFiles = filePaths.filter((p) => !fs.existsSync(p));
     if (missingFiles.length > 0) {
-      console.error(
-        `Error: The following files do not exist: ${missingFiles.join(', ')}`,
-      );
+      logger.error('files_not_found', { files: missingFiles });
       return;
     }
 
@@ -301,10 +296,7 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
         filePaths,
         separationOptions,
       });
-      console.log(`\n[Ducer] Separation task queued. Job ID: ${job.id}`);
-      console.log(
-        '[Ducer] Run "ducer daemon" to process the queue or "ducer jobs --status" to check progress.',
-      );
+      logger.info('separation_queued', { jobId: job.id, filePaths });
       return;
     }
 
@@ -318,9 +310,10 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
           if (item.success && item.result) {
             printStemSeparationResult(item.file, item.result);
           } else {
-            console.error(
-              `[Ducer] Error separating ${item.file}: ${item.error}`,
-            );
+            logger.error('separation_item_error', {
+              file: item.file,
+              error: item.error,
+            });
           }
         }
       } else {
@@ -332,7 +325,7 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[Ducer] Error during stem separation: ${message}`);
+      logger.error('separation_error', { error: message });
     }
   } else if (subcommand === 'jobs') {
     const queue = new JobQueue(
@@ -340,27 +333,19 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
     );
     if (argv.status) {
       const jobs = queue.listJobs();
-      console.log('\n[Ducer Jobs] Current queue:');
-      if (jobs.length === 0) {
-        console.log('  (No jobs found)');
-      } else {
-        jobs.forEach((job) => {
-          console.log(
-            `  - [${job.id}] ${job.type} (${job.status}) - ${job.createdAt}`,
-          );
-        });
-      }
+      logger.info('jobs_status', { count: jobs.length, jobs });
     } else if (argv.cancel) {
-      const success = queue.cancelJob(argv.cancel);
+      const jobId = String(argv.cancel);
+      const success = queue.cancelJob(jobId);
       if (success) {
-        console.log(`[Ducer Jobs] Job ${argv.cancel} cancelled.`);
+        logger.info('job_cancelled', { jobId });
       } else {
-        console.error(
-          `[Ducer Jobs] Error: Could not cancel job ${argv.cancel}.`,
-        );
+        logger.error('job_cancel_failed', { jobId });
       }
     } else {
-      console.log('Usage: ducer jobs --status or ducer jobs --cancel [id]');
+      logger.info('jobs_usage', {
+        message: 'Usage: ducer jobs --status or ducer jobs --cancel [id]',
+      });
     }
   } else if (subcommand === 'daemon') {
     await runDaemon(ducer, config);
@@ -375,16 +360,14 @@ export async function handleDucerCommand(argv: DucerArgs, config: DucerConfig) {
     } else if (subcommand === 'service') {
       await runServiceLoop(ducer, context, config);
     } else {
-      console.log(
-        '\n[Ducer] Entering Interactive Producer Mode. (REAPER Linked)',
-      );
+      logger.info('interactive_mode_starting', {
+        message: 'Entering Interactive Producer Mode. (REAPER Linked)',
+      });
       // Interactive mode integration with base CLI handled via core
     }
-  } else {
-    console.log(
-      'Command not recognized. Use "ducer analyze", "ducer do", "ducer service", "ducer jobs" or "ducer daemon"',
-    );
-  }
+    } else {
+      logger.warn('command_not_recognized', { subcommand });
+    }
 }
 
 /**
@@ -395,9 +378,9 @@ async function runServiceLoop(
   context: string,
   config: DucerConfig,
 ) {
-  console.log(
-    `\n[Ducer] Service Mode Active. Listening for REAPER commands...`,
-  );
+  logger.info('service_mode_active', {
+    message: 'Service Mode Active. Listening for REAPER commands...',
+  });
 
   const scriptsDir = getReaperScriptsDir();
   const SERVICE_CMD_FILE = path.join(scriptsDir, 'ducer_commands.txt');
@@ -410,7 +393,7 @@ async function runServiceLoop(
       const cmd = fs.readFileSync(SERVICE_CMD_FILE, 'utf8').trim();
       if (cmd !== '') {
         atomicWriteSync(SERVICE_CMD_FILE, '');
-        console.log(`\n[Ducer Service] Incoming Command: ${cmd}`);
+        logger.info('service_incoming_command', { command: cmd });
 
         try {
           const response = await ducer.getInsight(cmd, context, config);
@@ -432,14 +415,15 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
   const queue = new JobQueue(config.ducerSettings?.background_jobs?.queue_file);
 
   // Reset stale 'running' jobs to 'pending' on startup
-  console.log('[Ducer Daemon] Cleaning up stale jobs...');
+  logger.info('daemon_starting', { message: 'Cleaning up stale jobs...' });
   queue.resetStaleJobs();
 
   const maxParallel = config.ducerSettings?.background_jobs?.max_parallel ?? 2;
   const maxAttempts = 3;
-  console.log(
-    `[Ducer Daemon] Job queue processor active. Max parallel: ${maxParallel}`,
-  );
+  logger.info('daemon_ready', {
+    maxParallel,
+    message: `Job queue processor active. Max parallel: ${maxParallel}`,
+  });
 
   while (true) {
     const running = queue.getRunningJobs();
@@ -447,9 +431,6 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
       const job = queue.claimNextPendingJob();
       if (job) {
         if (job.attempts > maxAttempts) {
-          console.error(
-            `[Ducer Daemon] Skipping job ${job.id} after ${job.attempts} failed attempts.`,
-          );
           logger.error('job_max_attempts_reached', {
             jobId: job.id,
             attempts: job.attempts,
@@ -460,7 +441,6 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
           });
           continue;
         }
-        console.log(`[Ducer Daemon] Starting job: ${job.id} (${job.type})`);
         logger.info('job_started', { type: job.type }, { jobId: job.id });
 
         // Process in background
@@ -606,11 +586,9 @@ async function runDaemon(ducer: DucerCore, config: DucerConfig) {
                 error: 'Unknown job type.',
               });
             }
-            console.log(`[Ducer Daemon] Job completed: ${job.id}`);
             logger.info('job_completed', { type: job.type }, { jobId: job.id });
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
-            console.error(`[Ducer Daemon] Job failed: ${job.id} - ${msg}`);
             logger.error(
               'job_failed',
               { type: job.type, error: msg },
@@ -634,16 +612,13 @@ function printStemSeparationResult(
     stemFiles: string[];
   },
 ) {
-  console.log(
-    `\n[Ducer] Separation completed for ${path.basename(originalFile)}:`,
-  );
-  console.log(`  -> Backend: ${result.backend}`);
-  console.log(`  -> Preset: ${result.preset}`);
-  console.log(`  -> Output: ${result.outputDir}`);
-  console.log('  -> Expected stems:');
-  for (const stem of result.stemFiles) {
-    console.log(`     - ${stem}`);
-  }
+  logger.info('separation_result', {
+    file: path.basename(originalFile),
+    backend: result.backend,
+    preset: result.preset,
+    output: result.outputDir,
+    stems: result.stemFiles,
+  });
 }
 
 /**
@@ -670,10 +645,11 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 
   const fileUrl = pathToFileURL(htmlPath).href;
 
-  console.log('\n[Ducer] Audit finished. Reports generated:');
-  console.log(`  -> MD: ${baseFileName}.md`);
-  console.log(`  -> HTML: ${baseFileName}.html`);
-  console.log(`  -> Link: ${fileUrl}`);
+  logger.info('audit_finished', {
+    baseFileName,
+    htmlPath,
+    fileUrl,
+  });
 
   // 3. Open in Browser
   const opener =
@@ -689,7 +665,7 @@ async function handleAdvancedArtifacts(content: string, originalFile: string) {
 
   exec(command, (err) => {
     if (err)
-      console.error('[Ducer] Could not open automatically: ' + err.message);
+      logger.error('report_open_failed', { error: err.message });
   });
 }
 

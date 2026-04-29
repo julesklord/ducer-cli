@@ -17,6 +17,7 @@ powerful tool for developers.
   - **Testing:** Vitest
   - **Bundling:** esbuild
   - **Linting/Formatting:** ESLint, Prettier
+
 - **Architecture:** Monorepo structure using npm workspaces.
   - `packages/cli`: User-facing terminal UI, input processing, and display
     rendering.
@@ -27,7 +28,8 @@ powerful tool for developers.
   - `packages/devtools`: Integrated developer tools (Network/Console inspector).
   - `packages/test-utils`: Shared test utilities and test rig.
   - `packages/vscode-ide-companion`: VS Code extension pairing with the CLI.
-  - `plugins_music`: (Ducer) Isolated music producer layer for DAW integration and audio analysis.
+  - `plugins_music`: (Ducer) Isolated music producer layer for DAW integration
+    and audio analysis.
 
 ## Building and Running
 

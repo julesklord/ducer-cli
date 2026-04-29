@@ -83,7 +83,7 @@ export default tseslint.config(
   },
   {
     // Rules for packages/*/src (TS/TSX)
-    files: ['packages/*/src/**/*.{ts,tsx}'],
+    files: ['packages/*/src/**/*.{ts,tsx}', 'plugins_music/src/**/*.{ts,tsx}'],
     plugins: {
       import: importPlugin,
     },
@@ -212,7 +212,7 @@ export default tseslint.config(
   },
   {
     // Rules that only apply to product code
-    files: ['packages/*/src/**/*.{ts,tsx}'],
+    files: ['packages/*/src/**/*.{ts,tsx}', 'plugins_music/src/**/*.{ts,tsx}'],
     ignores: ['**/*.test.ts', '**/*.test.tsx', 'packages/*/src/test-utils/**'],
     rules: {
       '@typescript-eslint/no-unsafe-type-assertion': 'error',

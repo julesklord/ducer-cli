@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DucerCore } from './ducer_core.js';
+import type { DucerCore } from './ducer_core.js';
 import { logger } from './logger.js';
 
 /**
@@ -110,8 +110,8 @@ export const PIPELINES: Record<string, PipelineDefinition> = {
       {
         id: 'step_1_separate',
         tool: 'separate_stems',
-        args: { backend: 'demucs', preset: 'standard' },
-        description: 'Separate stems using Demucs',
+        args: { backend: 'uvr', preset: 'standard' },
+        description: 'Separate stems using UVR (GPU Accelerated)',
         optional: false,
       },
       {
@@ -126,6 +126,97 @@ export const PIPELINES: Record<string, PipelineDefinition> = {
       },
     ],
     timeout_seconds: 120,
+    allow_step_failures: false,
+  },
+  'vocal-polish': {
+    name: 'vocal-polish',
+    description: 'Separate vocals, normalize, and apply polish chain.',
+    steps: [
+      {
+        id: 'sep_vocals',
+        tool: 'separate_stems',
+        args: { backend: 'uvr', model: 'UVR-MDX-NET-Voc_FT.onnx' },
+        description: 'Extract lead vocals using UVR',
+        optional: false,
+      },
+      {
+        id: 'norm_vocals',
+        tool: 'execute_reaper_action',
+        args: { action_id: '40108' }, // Example action for normalization
+        prerequisites: ['sep_vocals'],
+        description: 'Normalize vocal track',
+        optional: true,
+      },
+      {
+        id: 'fx_chain',
+        tool: 'execute_lua_script',
+        args: {
+          code: '-- Add compressor and EQ to selected track\nreaper.Main_OnCommand(40011, 0)',
+        },
+        prerequisites: ['norm_vocals'],
+        description: 'Apply Vocal Polish FX Chain',
+        optional: true,
+      },
+    ],
+    timeout_seconds: 180,
+    allow_step_failures: true,
+  },
+  'lofi-master': {
+    name: 'lofi-master',
+    description: 'Apply Lo-Fi aesthetic and basic mastering.',
+    steps: [
+      {
+        id: 'analyze',
+        tool: 'visualize_audio_features',
+        args: { viz: 'spectrogram' },
+        description: 'Analyze spectral content',
+        optional: false,
+      },
+      {
+        id: 'apply_lofi',
+        tool: 'execute_lua_script',
+        args: {
+          code: '-- Apply bitcrusher and saturation\nreaper.Main_OnCommand(40012, 0)',
+        },
+        prerequisites: ['analyze'],
+        description: 'Apply Lo-Fi color and saturation',
+        optional: false,
+      },
+      {
+        id: 'final_limit',
+        tool: 'execute_reaper_action',
+        args: { action_id: '40008' },
+        prerequisites: ['apply_lofi'],
+        description: 'Final ceiling and normalization',
+        optional: false,
+      },
+    ],
+    timeout_seconds: 60,
+    allow_step_failures: false,
+  },
+  'phase-align': {
+    name: 'phase-align',
+    description: 'Analyze and fix phase correlation across tracks.',
+    steps: [
+      {
+        id: 'check_phase',
+        tool: 'get_reaper_status',
+        args: { full_scan: true },
+        description: 'Check correlation meters',
+        optional: false,
+      },
+      {
+        id: 'align',
+        tool: 'execute_lua_script',
+        args: {
+          code: '-- Auto-align phase logic\nreaper.Main_OnCommand(40013, 0)',
+        },
+        prerequisites: ['check_phase'],
+        description: 'Apply micro-delays for phase alignment',
+        optional: false,
+      },
+    ],
+    timeout_seconds: 30,
     allow_step_failures: false,
   },
 };
@@ -143,16 +234,16 @@ export class PipelineOrchestrator {
    */
   async executePipeline(
     pipelineDefn: PipelineDefinition,
+    options: Record<string, unknown> = {},
   ): Promise<PipelineResult> {
     const startTime = Date.now();
     const results: StepResult[] = [];
     const executedSteps = new Set<string>();
 
-    logger.info('pipeline_started', { pipeline: pipelineDefn.name });
-    console.log(`\n[Ducer] Executing pipeline: ${pipelineDefn.name}`);
-    console.log(
-      `[Ducer] Plan: ${pipelineDefn.steps.map((s) => s.description).join(' → ')}\n`,
-    );
+    logger.info('pipeline_started', {
+      pipeline: pipelineDefn.name,
+      plan: pipelineDefn.steps.map((s) => s.description),
+    });
 
     let stepsFailed = 0;
 
@@ -173,12 +264,17 @@ export class PipelineOrchestrator {
 
       // Execute step
       const stepStartTime = Date.now();
-      console.log(`[Ducer] Step ${step.id}: ${step.description}...`);
-
+      logger.info('pipeline_step_starting', {
+        stepId: step.id,
+        description: step.description,
+      });
       try {
+        // Merge step args with execution options
+        const finalArgs = { ...step.args, ...options };
+
         const output = await this.ducerCore.dispatchTool({
           name: step.tool,
-          args: JSON.stringify(step.args),
+          args: JSON.stringify(finalArgs),
         });
 
         const duration = Date.now() - stepStartTime;
@@ -191,7 +287,10 @@ export class PipelineOrchestrator {
         });
 
         executedSteps.add(step.id);
-        console.log(`[Ducer] ✓ ${step.id} completed in ${duration}ms\n`);
+        logger.info('pipeline_step_completed', {
+          stepId: step.id,
+          durationMs: duration,
+        });
       } catch (err) {
         const duration = Date.now() - stepStartTime;
         const errorMsg = err instanceof Error ? err.message : String(err);
@@ -212,15 +311,17 @@ export class PipelineOrchestrator {
         });
 
         if (!step.optional && !pipelineDefn.allow_step_failures) {
-          console.error(`[Ducer] ✗ ${step.id} FAILED: ${errorMsg}`);
-          console.error(
-            `[Ducer] Pipeline execution STOPPED (non-optional step failed)`,
-          );
+          logger.error('pipeline_stopped', {
+            stepId: step.id,
+            error: errorMsg,
+            reason: 'non-optional_step_failed',
+          });
           break;
         } else {
-          console.warn(
-            `[Ducer] ⚠ ${step.id} failed (optional, continuing): ${errorMsg}\n`,
-          );
+          logger.warn('pipeline_step_failed_continuing', {
+            stepId: step.id,
+            error: errorMsg,
+          });
         }
       }
     }
@@ -275,6 +376,12 @@ export class PipelineOrchestrator {
       lower.includes('stem')
     ) {
       return PIPELINES['remix'];
+    } else if (lower.includes('vocal') && lower.includes('polish')) {
+      return PIPELINES['vocal-polish'];
+    } else if (lower.includes('lofi') || lower.includes('lo-fi')) {
+      return PIPELINES['lofi-master'];
+    } else if (lower.includes('phase') && lower.includes('align')) {
+      return PIPELINES['phase-align'];
     }
 
     return null;

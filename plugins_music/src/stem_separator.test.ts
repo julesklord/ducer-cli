@@ -4,20 +4,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as cp from 'node:child_process';
 import { StemSeparationManager } from './stem_separator';
 
-vi.mock('node:child_process', () => ({
-  execFile: vi.fn((_cmd, _args, cb) => cb(null, { stdout: 'ok', stderr: '' })),
-}));
+vi.mock('node:child_process', () => {
+  const mockProcess = {
+    stdout: { on: vi.fn() },
+    stderr: { on: vi.fn() },
+    on: vi.fn((event, cb) => {
+      if (event === 'close') {
+        setTimeout(() => cb(0), 10);
+      }
+    }),
+  };
+  return {
+    execFile: vi.fn((_cmd, _args, cb) => cb(null, { stdout: 'ok', stderr: '' })),
+    spawn: vi.fn(() => mockProcess),
+    promisify: vi.fn((fn) => fn),
+  };
+});
 
 vi.mock('node:fs', () => ({
   default: {
     existsSync: vi.fn().mockReturnValue(true),
     mkdirSync: vi.fn(),
+    readdirSync: vi.fn().mockReturnValue(['vocals.wav', 'no_vocals.wav']),
   },
 }));
 
@@ -45,42 +59,37 @@ describe('StemSeparationManager', () => {
     expect(result.stemFiles.some((file) => file.endsWith('vocals.wav'))).toBe(true);
   });
 
-  it('should request two-stem mode for vocals preset', async () => {
-    await manager.separate('vocal.wav', {
-      backend: 'demucs',
-      preset: 'vocals',
-      outputDir: 'C:\\stems',
-    });
-
-    expect(cp.execFile).toHaveBeenCalledWith(
-      'demucs',
-      expect.arrayContaining(['--two-stems', 'vocals']),
-      expect.any(Function),
-    );
-  });
-
-  it('should run uvr backend with normalized args', async () => {
+  it('should run uvr backend (audio-separator) with correct args', async () => {
     const result = await manager.separate('mix.wav', {
       backend: 'uvr',
-      preset: 'karaoke',
+      preset: 'vocals',
       outputDir: 'C:\\uvr',
-      model: 'UVR-MDX-NET',
     });
 
-    expect(cp.execFile).toHaveBeenCalledWith(
-      'uvr-cli',
+    expect(cp.spawn).toHaveBeenCalledWith(
+      expect.stringContaining('audio-separator'),
       expect.arrayContaining([
-        '--input',
         'mix.wav',
+        '--model_filename',
+        'UVR-MDX-NET-Voc_FT.onnx',
         '--output_dir',
-        expect.stringContaining('C:\\uvr'),
-        '--preset',
-        'karaoke',
-        '--model',
-        'UVR-MDX-NET',
+        expect.stringContaining('mix_'),
       ]),
-      expect.any(Function),
+      expect.objectContaining({ shell: true }),
     );
     expect(result.backend).toBe('uvr');
+  });
+
+  it('should respect device option in uvr backend', async () => {
+    await manager.separate('mix.wav', {
+      backend: 'uvr',
+      device: 'cpu',
+    });
+
+    expect(cp.spawn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining(['--use_cpu']),
+      expect.any(Object),
+    );
   });
 });

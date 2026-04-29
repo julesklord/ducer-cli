@@ -84,3 +84,7 @@ README_GEMINI.md
 .gemini/
 .vs/
 /patch_workflow.sh
+.plans/
+eslint_report.txt
+lint_results_ducer_core.json
+.gitignore

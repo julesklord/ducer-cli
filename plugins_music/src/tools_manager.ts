@@ -115,6 +115,21 @@ export class MusicToolsManager {
           },
         },
       },
+      {
+        name: 'separate_stems',
+        description: 'Separate audio into stems (vocals, drums, etc.) using UVR or Demucs.',
+        parameters: {
+          type: 'object',
+          properties: {
+            filePath: { type: 'string', description: 'Path to the audio file.' },
+            backend: { type: 'string', enum: ['uvr', 'demucs'], description: 'Backend to use (uvr is recommended for quality).' },
+            preset: { type: 'string', enum: ['vocals', 'standard', 'high-quality', 'karaoke'], description: 'Processing preset.' },
+            model: { type: 'string', description: 'Optional: Specific model filename for UVR.' },
+            device: { type: 'string', enum: ['cpu', 'cuda', 'mps'], description: 'Hardware device to use.' }
+          },
+          required: ['filePath', 'backend']
+        }
+      }
     ];
   }
 }

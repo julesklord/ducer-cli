@@ -24,6 +24,8 @@ import {
   StemSeparationManager,
   type StemSeparationOptions,
   type StemSeparationResult,
+  type StemSeparationBackend,
+  type StemSeparationPreset,
 } from './stem_separator.js';
 import { PipelineOrchestrator } from './pipeline_orchestrator.js';
 
@@ -176,9 +178,9 @@ export class DucerCore {
       const toolResultParts: unknown[] = [];
       for (const rawCall of toolCallsThisTurn) {
         const call = enrichToolCall ? enrichToolCall(rawCall) : rawCall;
-        console.log(`\n[Ducer] Executing: ${call.name}...`);
+        logger.info(`executing_tool`, { tool: call.name });
         const result = await this.dispatchTool(call);
-        console.log(`[Ducer] Result for ${call.name} obtained.`);
+        logger.info(`tool_result_obtained`, { tool: call.name });
         toolResultParts.push({
           text: `[RESULTADO TOOL ${call.name}]: ${result}`,
         });
@@ -187,7 +189,7 @@ export class DucerCore {
       currentMessages = [{ role: 'user', parts: toolResultParts }];
     }
 
-    console.warn(`[Ducer] Turn limit reached in ${engineLabel}.`);
+    logger.warn(`turn_limit_reached`, { engineLabel });
     return fullResponse;
   }
 
@@ -205,9 +207,7 @@ export class DucerCore {
     const matchedPipeline = await orchestrator.identifyPipeline(query);
 
     if (matchedPipeline) {
-      console.log(
-        `\n[Ducer-Core] Query matched pipeline: "${matchedPipeline.name}"`,
-      );
+      logger.info(`query_matched_pipeline`, { pipeline: matchedPipeline.name });
       const result = await orchestrator.executePipeline(matchedPipeline);
       return (
         result.summary +
@@ -228,8 +228,12 @@ export class DucerCore {
     const systemPrompt = this.getSystemPrompt(mode) + '\n\n' + context;
     const toolDeclarations = this.toolsManager.getMusicToolsDeclarations();
 
-    console.log(`[Ducer] Processing query: "${query}"`);
-    this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
+    logger.info(`processing_query`, { query });
+    if (geminiClient && typeof geminiClient === 'object' && 'sendMessageStream' in geminiClient) {
+      this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
+    } else {
+      throw new Error('Invalid Gemini client provided');
+    }
 
     return this.runToolAwareLoop(
       [{ text: systemPrompt + '\n\nUSER: ' + query }],
@@ -245,24 +249,26 @@ export class DucerCore {
     name: string;
     args: string;
   }): Promise<string> {
-    let args: Record<string, unknown>;
+    const rawArgs: unknown = JSON.parse(call.args);
+    if (typeof rawArgs !== 'object' || rawArgs === null || Array.isArray(rawArgs)) {
+      throw new Error('Tool arguments must be an object');
+    }
+    const args = rawArgs as Record<string, unknown>;
     try {
-      args = JSON.parse(call.args);
     } catch (parseError) {
       const errorMsg =
         parseError instanceof Error ? parseError.message : String(parseError);
-      console.error(`[Ducer-Core] Failed to parse tool arguments: ${errorMsg}`);
       return `Error: Invalid tool arguments JSON - ${errorMsg}`;
     }
 
-    console.log(`\n[Ducer-Core] Dispatching Tool: ${call.name}`);
+    logger.info(`dispatching_tool`, { tool: call.name });
 
     try {
       switch (call.name) {
         case 'visualize_audio_features':
           return JSON.stringify(
             await this.audioAnalyzer.visualize(
-              (args['filePath'] as string) || '',
+              typeof args['filePath'] === 'string' ? args['filePath'] : '',
               args,
             ),
           );
@@ -270,7 +276,7 @@ export class DucerCore {
         case 'transcribe_vocals':
           return JSON.stringify(
             await this.audioAnalyzer.transcribe(
-              (args['filePath'] as string) || '',
+              typeof args['filePath'] === 'string' ? args['filePath'] : '',
             ),
           );
 
@@ -283,16 +289,12 @@ export class DucerCore {
 
           // Anti-Hallucination: Verify if NOT in our local registry
           if (!this.isInRegistry(idToExecute)) {
-            console.log(
-              `[Ducer-Core] Unknown ID detected (${idToExecute}). Verifying with REAPER...`,
-            );
+            logger.info(`unknown_id_detected`, { idToExecute });
             const validation = await this.bridge.validateAction(idToExecute);
             if (!validation.valid) {
-              console.log(
-                `[Ducer-Core] Hallucination detected. Attempting semantic fallback for: ${args['action_id']}`,
-              );
+              logger.info(`hallucination_detected`, { actionId: args['action_id'] });
               return await this.semanticSearchFallback(
-                args['action_id'] as string,
+                String(args['action_id']),
               );
             }
           }
@@ -301,20 +303,20 @@ export class DucerCore {
 
         case 'learn_workflow_macro':
           return await this.learnMacro(
-            args['name'] as string,
-            args['action_id'] as string,
+            String(args['name']),
+            String(args['action_id']),
           );
 
         case 'get_learned_actions':
           return fs.readFileSync(this.actionsDbPath, 'utf8');
 
         case 'search_actions': {
-          return await this.performAdvancedSearch(args['query'] as string);
+          return await this.performAdvancedSearch(String(args['query']));
         }
 
         case 'execute_lua_script': {
           if (this.bridge.executeScript) {
-            return await this.bridge.executeScript(args['code'] as string);
+            return await this.bridge.executeScript(String(args['code']));
           }
           return 'Error: Scripting not supported by current DAW bridge.';
         }
@@ -324,13 +326,32 @@ export class DucerCore {
             return '[ScriptManager] Remote toolset installation is intentionally unavailable until a verified registry and integrity checks are implemented.';
           }
           return await this.scriptManager.installToolset(
-            args['author'] as string,
+            String(args['author']),
           );
         }
 
         case 'get_reaper_status': {
           const status = await this.bridge.getStatus();
           return status ? JSON.stringify(status) : 'Error: DAW disconnected';
+        }
+
+        case 'separate_stems': {
+          const filePath = typeof args['filePath'] === 'string' ? args['filePath'] : '';
+          const backendRaw = args['backend'];
+          const backend = (backendRaw === 'demucs' || backendRaw === 'uvr') 
+            ? (backendRaw as StemSeparationBackend) 
+            : 'uvr';
+          
+          const options: StemSeparationOptions = {
+            backend,
+            preset: args['preset'] as StemSeparationPreset,
+            model: typeof args['model'] === 'string' ? args['model'] : undefined,
+            device: (args['device'] === 'cpu' || args['device'] === 'cuda' || args['device'] === 'mps')
+              ? (args['device'] as 'cpu' | 'cuda' | 'mps')
+              : undefined,
+          };
+          const result = await this.separateStems(filePath, options);
+          return JSON.stringify(result);
         }
 
         default:
@@ -409,7 +430,7 @@ export class DucerCore {
 
     const learnedResults = Object.keys(learnedDb)
       .filter((k) => k.includes(query.toLowerCase()))
-      .map((k) => ({ name: `[learned] ${k}`, id: learnedDb[k] as string }));
+      .map((k) => ({ name: `[learned] ${k}`, id: String(learnedDb[k]) }));
 
     const allResults = [...localResults, ...learnedResults];
 
@@ -425,9 +446,9 @@ export class DucerCore {
       const db = JSON.parse(fs.readFileSync(this.actionsDbPath, 'utf8'));
       return db[idOrName.toLowerCase()] || idOrName;
     } catch (error: unknown) {
-      console.warn(
-        `[DucerCore] Failed to resolve action ID: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      logger.warn(`failed_to_resolve_action_id`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return idOrName;
     }
   }
@@ -459,9 +480,11 @@ export class DucerCore {
     const mediaType = getAudioMediaType(filePath);
     const fileName = path.basename(filePath);
 
-    console.log(
-      `[Ducer] Audio loaded: ${fileName} (${(audioBytes.length / 1024 / 1024).toFixed(2)} MB, ${mediaType})`,
-    );
+    logger.info(`audio_loaded`, {
+      fileName,
+      sizeMb: (audioBytes.length / 1024 / 1024).toFixed(2),
+      mediaType,
+    });
 
     const geminiClient = config.getGeminiClient();
     CompatibilityShield.validateGeminiClient(geminiClient);
@@ -494,7 +517,11 @@ Provide:
       { text: textPrompt },
     ];
 
-    this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
+    if (geminiClient && typeof geminiClient === 'object' && 'sendMessageStream' in geminiClient) {
+      this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
+    } else {
+      throw new Error('Invalid Gemini client provided');
+    }
 
     const response = await this.runToolAwareLoop(
       multimodalMessage,
@@ -538,9 +565,7 @@ Provide:
     const results: Array<{ file: string; response: string; success: boolean }> =
       [];
 
-    console.log(
-      `\n[Ducer] Starting batch processing of ${filePaths.length} files...`,
-    );
+    logger.info(`batch_processing_started`, { count: filePaths.length });
 
     // Using allSettled so individual failures don't stop the whole batch
     const tasks = filePaths.map(async (filePath) => {
@@ -572,7 +597,7 @@ Provide:
     const successCount = results.filter((r) => r.success).length;
     const summary = `${successCount}/${filePaths.length} files analyzed successfully in ${duration.toFixed(1)}s.`;
 
-    console.log(`\n[Ducer] Batch Summary: ${summary}`);
+    logger.info(`batch_summary`, { summary });
     return { results, summary, totalDurationSeconds: duration };
   }
 
@@ -590,9 +615,11 @@ Provide:
       throw new Error(`Validation Error: ${validation.error}`);
     }
 
-    console.log(
-      `[Ducer] Starting stem separation (${options.backend}/${options.preset ?? 'standard'}): ${path.basename(filePath)}...`,
-    );
+    logger.info(`stem_separation_started_detail`, {
+      backend: options.backend,
+      preset: options.preset ?? 'standard',
+      file: path.basename(filePath),
+    });
     const result = await this.stemSeparationManager.separate(filePath, options);
     logger.info('stem_separation_completed', {
       filePath,
@@ -627,7 +654,7 @@ Provide:
     const successCount = results.filter((item) => item.success).length;
     const summary = `${successCount}/${filePaths.length} files processed successfully for stem separation.`;
 
-    console.log(`\n[Ducer] Stem Separation Summary: ${summary}`);
+    logger.info(`stem_separation_summary`, { summary });
     return { results, summary };
   }
 
@@ -696,9 +723,7 @@ Provide:
     }>;
     summary: string;
   }> {
-    console.log(
-      `\n[Ducer] Converting ${filePaths.length} files to ${format}...`,
-    );
+    logger.info(`converting_files`, { count: filePaths.length, format });
     const tasks = filePaths.map(async (filePath) => {
       try {
         const outputPath = await this.convertAudio(filePath, format, outputDir);
@@ -713,7 +738,7 @@ Provide:
     const successCount = results.filter((r) => r.success).length;
     const summary = `${successCount}/${filePaths.length} files converted successfully to ${format}.`;
 
-    console.log(`[Ducer] Conversion Summary: ${summary}`);
+    logger.info(`conversion_batch_completed`, { summary });
     return { results, summary };
   }
 
@@ -755,7 +780,7 @@ Provide:
     }>;
     summary: string;
   }> {
-    console.log(`\n[Ducer] Normalizing ${filePaths.length} files...`);
+    logger.info(`normalizing_files`, { count: filePaths.length });
     const tasks = filePaths.map(async (filePath) => {
       try {
         const outputPath = await this.normalizeAudio(filePath, outputDir);
@@ -770,7 +795,7 @@ Provide:
     const successCount = results.filter((r) => r.success).length;
     const summary = `${successCount}/${filePaths.length} files normalized successfully.`;
 
-    console.log(`[Ducer] Normalization Summary: ${summary}`);
+    logger.info(`normalization_batch_completed`, { summary });
     return { results, summary };
   }
 
@@ -827,9 +852,10 @@ Provide:
       throw new Error(`No valid audio files found in directory: ${dirPath}`);
     }
 
-    console.log(
-      `[Ducer] Analyzing ${filePaths.length} stems in: ${path.basename(dirPath)}`,
-    );
+    logger.info('stem_analysis_batch_start', {
+      count: filePaths.length,
+      dir: path.basename(dirPath),
+    });
     const batch = await this.analyzeMultiple(filePaths, mode, config);
 
     let comparativeReport: string | undefined;
@@ -852,9 +878,11 @@ Provide:
   ): Promise<string> {
     const geminiClient = config.getGeminiClient();
     const sessionId = config.getSessionId();
-    this.currentGeminiClient = geminiClient as NonNullable<
-      DucerCore['currentGeminiClient']
-    >;
+    if (geminiClient && typeof geminiClient === 'object' && 'sendMessageStream' in geminiClient) {
+      this.currentGeminiClient = geminiClient as typeof this.currentGeminiClient;
+    } else {
+      throw new Error('Invalid Gemini client provided');
+    }
 
     const context = results
       .filter((r) => r.success)

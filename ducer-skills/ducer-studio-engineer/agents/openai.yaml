@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ducer Studio Engineer"
+  short_description: "Audio, video and DAW engineering for Ducer"
+  default_prompt: "Use $ducer-studio-engineer to advance Ducer as a production-ready audio and video workflow system."
