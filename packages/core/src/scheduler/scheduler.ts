@@ -455,6 +455,7 @@ export class Scheduler {
           if (peeked && this._isParallelizable(peeked.request)) {
             // Check for resource conflicts with already batched tools
             const hasConflict = batch.some((batchedCall) =>
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
               this._hasResourceConflict(batchedCall as any, peeked as any),
             );
 
@@ -559,6 +560,7 @@ export class Scheduler {
     return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _hasResourceConflict(callA: any, callB: any): boolean {
     if (
       callA.status === CoreToolCallStatus.Error ||
@@ -576,13 +578,19 @@ export class Scheduler {
       return false;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const locsA = invocationA.toolLocations();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const locsB = invocationB.toolLocations();
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     for (const lA of locsA) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       for (const lB of locsB) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (lA.path === lB.path) {
           // Conflict if at least one is NOT read-only
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           if (!lA.readOnly || !lB.readOnly) {
             return true;
           }

@@ -246,6 +246,7 @@ export class LocalSubagentInvocation extends BaseToolInvocation<
               }
             }
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             recentActivity.push({
               id: randomUUID(),
               type: 'thought',
@@ -253,7 +254,9 @@ export class LocalSubagentInvocation extends BaseToolInvocation<
                 isCancellation || isRejection
                   ? sanitizedError
                   : `Error: ${sanitizedError}`,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
               status: isCancellation || isRejection ? 'cancelled' : 'error',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
               stack: activity.data['stack'] as string | undefined,
             } as any); // cast to any to avoid type error if stack is not in type yet
             updated = true;

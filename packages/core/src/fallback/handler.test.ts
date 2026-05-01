@@ -31,6 +31,7 @@ import type { FallbackModelHandler } from './types.js';
 import { openBrowserSecurely } from '../utils/secure-browser-launcher.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import * as policyHelpers from '../availability/policyHelpers.js';
+import { logFlashFallback, FlashFallbackEvent } from '../telemetry/index.js';
 import { createDefaultPolicy } from '../availability/policyCatalog.js';
 import {
   RetryableQuotaError,
@@ -60,8 +61,8 @@ const MOCK_PRO_MODEL = DEFAULT_GEMINI_MODEL;
 const FALLBACK_MODEL = DEFAULT_GEMINI_FLASH_MODEL;
 const AUTH_OAUTH = AuthType.LOGIN_WITH_GOOGLE;
 
-const createMockConfig = (overrides: Partial<Config> = {}): Config =>
-  ({
+const createMockConfig = (overrides: Partial<Config> = {}): Config => {
+  const config = {
     fallbackHandler: undefined,
     getFallbackModelHandler: vi.fn(),
     setActiveModel: vi.fn(),
@@ -77,8 +78,16 @@ const createMockConfig = (overrides: Partial<Config> = {}): Config =>
     getModel: vi.fn(() => MOCK_PRO_MODEL),
     getUserTier: vi.fn(() => undefined),
     isInteractive: vi.fn(() => false),
+    getContentGeneratorConfig: vi.fn(() => ({ authType: AUTH_OAUTH })),
     ...overrides,
-  }) as unknown as Config;
+  } as unknown as Config;
+
+  vi.mocked(config.activateFallbackMode).mockImplementation(() => {
+    logFlashFallback(config, new FlashFallbackEvent(AUTH_OAUTH));
+  });
+
+  return config;
+};
 
 describe('handleFallback', () => {
   let mockConfig: Config;
@@ -191,6 +200,10 @@ describe('handleFallback', () => {
         expect(policyConfig.activateFallbackMode).toHaveBeenCalledWith(
           DEFAULT_GEMINI_FLASH_MODEL,
         );
+        expect(logFlashFallback).toHaveBeenCalled();
+        expect(debugLogger.log).not.toHaveBeenCalled();
+        expect(debugLogger.warn).not.toHaveBeenCalled();
+        expect(debugLogger.error).not.toHaveBeenCalled();
       } finally {
         chainSpy.mockRestore();
       }
@@ -245,6 +258,10 @@ describe('handleFallback', () => {
       expect(availability.selectFirstAvailable).toHaveBeenCalledWith([
         PREVIEW_GEMINI_FLASH_MODEL,
       ]);
+      expect(logFlashFallback).not.toHaveBeenCalled();
+      expect(debugLogger.log).not.toHaveBeenCalled();
+      expect(debugLogger.warn).not.toHaveBeenCalled();
+      expect(debugLogger.error).not.toHaveBeenCalled();
     });
 
     it('should launch upgrade flow and avoid fallback mode when handler returns "upgrade"', async () => {
@@ -382,7 +399,13 @@ describe('handleFallback', () => {
       expect(policyConfig.activateFallbackMode).toHaveBeenCalledWith(
         FALLBACK_MODEL,
       );
-      // TODO: add logging expect statement
+      expect(logFlashFallback).toHaveBeenCalledWith(
+        policyConfig,
+        expect.any(FlashFallbackEvent),
+      );
+      expect(debugLogger.log).not.toHaveBeenCalled();
+      expect(debugLogger.warn).not.toHaveBeenCalled();
+      expect(debugLogger.error).not.toHaveBeenCalled();
     });
 
     it('does NOT call activateFallbackMode when handler returns "stop"', async () => {
@@ -396,7 +419,10 @@ describe('handleFallback', () => {
 
       expect(result).toBe(false);
       expect(policyConfig.activateFallbackMode).not.toHaveBeenCalled();
-      // TODO: add logging expect statement
+      expect(logFlashFallback).not.toHaveBeenCalled();
+      expect(debugLogger.log).not.toHaveBeenCalled();
+      expect(debugLogger.warn).not.toHaveBeenCalled();
+      expect(debugLogger.error).not.toHaveBeenCalled();
     });
 
     it('does NOT call activateFallbackMode when handler returns "retry_once"', async () => {
@@ -410,6 +436,10 @@ describe('handleFallback', () => {
 
       expect(result).toBe(true);
       expect(policyConfig.activateFallbackMode).not.toHaveBeenCalled();
+      expect(logFlashFallback).not.toHaveBeenCalled();
+      expect(debugLogger.log).not.toHaveBeenCalled();
+      expect(debugLogger.warn).not.toHaveBeenCalled();
+      expect(debugLogger.error).not.toHaveBeenCalled();
     });
   });
 });

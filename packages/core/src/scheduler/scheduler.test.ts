@@ -149,6 +149,7 @@ describe('Scheduler (Orchestrator)', () => {
 
   const mockInvocation = {
     shouldConfirmExecute: vi.fn(),
+    toolLocations: vi.fn().mockReturnValue([]),
   };
 
   beforeEach(() => {
